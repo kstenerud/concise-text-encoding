@@ -84,7 +84,7 @@ Example:
         "hex int"       = 0xfffe0001
         "float"         = 14.125
         "decimal"       = -d1.02e+40
-        "time"          = 2019.7.1-18:04:00/z
+        "time"          = 2019.7.1-18:04:00/Z
         "nil"           = nil
         "bytes"         = h/10 ff 38 9a dd 00 4f 4f 91/
         "url"           = :https://example.com/
@@ -290,12 +290,12 @@ Dates prior to the introduction of the Gregorian calendar in 1582 must be writte
 
 A time zone refers to the political designation of a location having a specific time offset from UTC during a particular time period. Time zones are in a constant state of flux, and can change at any time for many reasons. There are two ways to denote a time zone: by area/location, and by global coordinates.
 
+If the time zone is unspecified, it is assumed to be `Zero` (UTC).
+
 
 #### Area/Location
 
 The area/location method is the more human-readable of the two, but may not be precise enough for certain applications. Time zones are partitioned into areas containing locations, and are written in the form `Area/Location`. These areas and locations are specified in the [IANA time zone database](https://www.iana.org/time-zones).
-
-Note: String comparisons for area/location are always case insensitive.
 
 ##### Abbreviated Areas
 
@@ -328,8 +328,7 @@ The following special "areas" may also be used. They do not contain a location c
 
 * `E/Paris`
 * `America/Vancouver`
-* `Etc/UTC`
-* `Zero`
+* `Etc/UTC` == `Zero` == `Z`
 * `L`
 
 
@@ -384,7 +383,7 @@ A time is made up of the following fields:
 * Hours are always written according to the 24h clock (21:00, not 9:00 PM).
 * Minutes and seconds must always be padded to 2 digits.
 * Since there is no date component, time zone data must be interpreted as if it were "today", and so the time may not remain constant should the political situation at that time zone change at a later date.
-* If the time zone is unspecified, it is assumed to be UTC.
+* If the time zone is unspecified, it is assumed to be `Zero` (UTC).
 
 #### Examples
 
@@ -418,10 +417,13 @@ Byte array data is enclosed in forward slashes `/`, and is prefixed by the encod
 
 Encoding Types:
 
-| Type   | Prefix | Notes                                                     |
-| ------ | ------ | --------------------------------------------------------- |
-| Hex    |    h   | 1 byte represented by 2 lowercase hexadecimal characters  |
-| Safe85 |    8   | [Safe85 encoding](https://github.com/kstenerud/safe-encoding/blob/master/safe85-specification.md) |
+Supported encoding types are [hex](https://github.com/kstenerud/safe-encoding/blob/master/safe16-specification.md), [safe64](https://github.com/kstenerud/safe-encoding/blob/master/safe64-specification.md), and [safe85](https://github.com/kstenerud/safe-encoding/blob/master/safe85-specification.md). You can choose your encoding type based on your size constraints and desired features.
+
+| Type   | Prefix | Bloat | Features                               |
+| ------ | ------ | ----- | -------------------------------------- |
+| Hex    |    h   | 2.0   | Human readable, fast encoding/decoding |
+| Safe64 |    6   | 1.33  | Fast encoding/decoding                 |
+| Safe85 |    8   | 1.25  | Smallest size                          |
 
 #### Examples
 
@@ -600,8 +602,8 @@ Letter Case
 
 A CTE document must be entirely in lower case, with the following exceptions:
 
- * String contents: `"A string may contain UPPER CASE. Escape sequences must be lower case: \x3d"`
- * [Time zones](#time-zone) may use uppercase characters.
+ * String and comment contents: `"A string may contain UPPER CASE. Escape sequences must be lower case: \x3d"`
+ * [Time zones](#time-zone) are case sensitive, and contain uppercase characters.
  * Safe85 encoding makes use of uppercase characters in its code table.
 
 Everything else, including hexadecimal digits, exponents and escape sequences, must be lower case.
@@ -649,7 +651,7 @@ Examples:
 ### Whitespace **must not** occur:
 
  * Between a byte array encoding type and the opening double-quote: `h "` is invalid.
- * Splitting a time value: `2018.07.01-10 :53:22.001481/z` is invalid.
+ * Splitting a time value: `2018.07.01-10 :53:22.001481/Z` is invalid.
  * Splitting a numeric value: `3f h`, `9.41 d`, `3 000`, `9.3 e+3`, `- 1.0` are invalid.
  * Splitting special values: `t rue`, `ni l`, `i nf`, `n a n` are invalid.
 
