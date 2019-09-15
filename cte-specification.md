@@ -9,6 +9,15 @@ Concise Text Encoding (CTE) is a general purpose, human and machine readable, co
 CTE is non-cycic and hierarchical like XML and JSON, and supports the most common data types natively. CTE is type compatible with [Concise Binary Encoding (CBE)](https://github.com/kstenerud/concise-binary-encoding/blob/master/cbe-specification.md), but is a text format for human readability.
 
 
+
+TODO
+----
+
+- Use () for metadata map, matching CBE metadata map.
+- Hex float notation
+
+
+
 Features
 --------
 
@@ -30,8 +39,6 @@ Contents
   - [Boolean](#boolean)
   - [Integer](#integer)
   - [Floating Point](#floating-point)
-    - [Binary Floating Point](#binary-floating-point)
-    - [Decimal Floating Point](#decinal-floating-point)
     - [Floating Point Rules](#floating-point-rules)
     - [Infinity and Not a Number](#infinity-and-not-a-number)
   - [Numeric Whitespace](#numeric-whitespace)
@@ -72,6 +79,7 @@ Whitespace is used to separate elements in a container. In maps, the key and val
 
 Example:
 
+    ("_v" = 1)
     {
         # A comment
         "a list"        = [1 2 "a string"]
@@ -83,7 +91,6 @@ Example:
         "regular int"   = -10000000
         "hex int"       = 0xfffe0001
         "float"         = 14.125
-        "decimal"       = -d1.02e+40
         "time"          = 2019.7.1-18:04:00/Z
         "nil"           = nil
         "bytes"         = h/10 ff 38 9a dd 00 4f 4f 91/
@@ -111,6 +118,8 @@ Scalar Types
 ### Boolean
 
 Supports the values `true` and `false`.
+
+You may also use the aliases `t` and `f`.
 
 Example:
 
@@ -153,43 +162,28 @@ The exponential portion is denoted by the lowercase character `e`, followed by t
     6.411e+9 = 6411000000
     6.411e-9 = 0.000000006411
 
-The maximum number of significant digits, if not defined a-priori for participating parties, is as many digits as ieee754 allows for the data type.
+There is no maximum number of significant digits, but care must be taken to ensure that the receiving end will be able to store the value.
 
 Numbers must be written in lower case.
 
 There are two types of floating point numbers supported: binary and decimal.
 
 
-#### Binary Floating Point
-
-Represents ieee754 binary floating point values.
-
-Examples:
-
-    1.25e+7
-    -9.00001
-
-Binary floating point values are more common, and are supported by almost all hardware, but suffer from precision loss in the fractional portion due to the values being represented internally as powers of 2. Converting base-10 fractions to base-2 causes loss of precision because not all base-10 fractions can be accurately represented as sums of base-2 fractions within the constraints of the ieee754 spec. For example, `90.1` in decimal would be somewhere around `90.0999` in binary.
-
-Even though binary floating point values lose accuracy in certain cases, it is important to retain fidelity when transmitting such data.
-
-
-#### Decimal Floating Point
-
-Represents ieee754 decimal floating point values. These are primarily used in financial and other applications where binary rounding errors are unacceptable.
-
-Decimal floating point values are differentiated from binary floating point values by prefixing with `d`.
-
-Examples:
-
-    d12.99
-    -d100.04
-    d2.58411e-50
-
-Decimal floating point values don't lose precision because they are internally represented as powers of 10, but they have slightly less range, and aren't supported in hardware on many platforms (yet).
+TODO: Take description from CBE
 
 
 #### Floating Point Rules
+
+**There must be one (and only one) dot character:**
+
+| Value        | Notes              |
+| ------------ | ------------------ |
+| 1            | Integer, not float |
+| 1.0          | Float              |
+| 500000000000 | Integer, not float |
+| 5.0e+11      | Float              |
+| 5e+11        | Invalid            |
+| 10.4.5       | Invalid            |
 
 **There must be at least one digit on each side of the dot character:**
 
@@ -200,13 +194,7 @@ Decimal floating point values don't lose precision because they are internally r
 | .218901e+2 | 21.8901 | Or 2.18901e+1                                        |
 | -0         | -0.0    | Special case: -0 cannot be represented as an integer |
 
-**If there is an exponential portion, there must also be a dot:**
-
-| Invalid    | Valid    |
-| ---------- | -------- |
-| 1e+100     | 1.0e+100 |
-
-**Exponential notation must be normalized (one and only one digit to the left of the dot, non-zero):**
+**Exponential notation must be normalized (one digit, non-zero, to the left of the dot):**
 
 | Invalid    | Valid      |
 | ---------- | ---------- |
@@ -215,11 +203,6 @@ Decimal floating point values don't lose precision because they are internally r
 | -1000e+5   | -1.0e+8    |
 | 65.0e-20   | 6.5e-21    |
 | 0.5e+10    | 5.0e+11    |
-
-**There must be one and only one dot character:**
-
-* `10.4.5` is not a floating point number.
-* `10` is interpreted as an integer.
 
 
 #### Infinity and Not a Number
@@ -230,30 +213,30 @@ The following are special floating point values:
  * `-inf`: Negative Infinity
  * `nan`: Not a Number (non-signaling)
 
-Although ieee754 allows many different NaN values (signaling or non-signaling + payload), all NaN values for the purpose of this spec are considered equal and non-signaling, and must be treated as equivalent when used as map keys (meaning you cannot have multiple NAN keys in a map).
+TODO: Allow sign, signling
 
-A decoder is free to decode infinity and NaN as binary or decimal floating point values.
+TODO: nan cannot be used as a map key
+
 
 
 ### Numeric Whitespace
 
 The `_` character may be used as "numeric whitespace" when encoding numeric values.
 
-All numeric values of any type (with the exception of +- "nan" and "inf") may contain any amount of whitespace at any point after the first character and before the last character. Numeric whitespace characters must be ignored while decoding numeric values.
+Rules:
 
-Examples:
+* Numeric values of any type may contain any amount of whitespace at any point after the first character.
+* Numeric values must not begin with numeric whitespace.
+* Special named values `nan` and `inf` must not contain whitespace.
 
-    1_000_000 = 1000000
-    -_7_._4_e_+_100 = -7.4e+100
-    -d_4_10.___2_2 = -d410.22
+| Value       | Valid Whitespace     | Invalid Whitespace | Notes                                         |
+| ----------- | -------------------- | ------------------ | --------------------------------------------- |
+| `1000000`   | `1_000_000`          | `_1_000_000`       | `_1_000_000` would be interpreted as a string |
+| `-7.4e+100` | `-_7_._4__e_+___100` | `_-7.4e+100`       |                                               |
+| `nan`       | `nan`                | `n_an`             | `n_an` would be interpreted as a string       |
+| `-inf`      | `-inf`               | `-inf_`            |                                               |
 
-Invalid:
-
-    _100
-    _-d6.33
-    50_
-    n_an
-    -_inf
+Numeric whitespace characters must be ignored while decoding numeric values.
 
 
 
@@ -441,6 +424,12 @@ Supported encoding types are [hex](https://github.com/kstenerud/safe-encoding/bl
 
 ### String
 
+TODO: Strings may not need quotes:
+- similar rules to identifiers in programming languages
+- do not begin with numerals or any symbol other than `_`
+- do not contain spaces
+- do not conflict with other defined objects like true, false, t, f, nil, nan, inf, etc
+
 An array of UTF-8 encoded bytes, without a byte order mark (BOM). Strings must be enclosed in double-quotes `"`, and cannot contain values or sequences that evaluate to NUL.
 
 The following escape sequences are allowed inside a string's contents, and must be in lower case:
@@ -464,7 +453,7 @@ Strings must always resolve to complete, valid unicode sequences when fully deco
 
 ### URI
 
-Uniform Resource Identifier, structured in accordance with [RFC 3986](https://tools.ietf.org/html/rfc3986). URIs are prefixed with a colon character (`:`) and end with a whitespace character.
+Uniform Resource Identifier, structured in accordance with [RFC 3986](https://tools.ietf.org/html/rfc3986). URIs are prefixed with a colon character (`:`) and end with a whitespace character. You can encode whitespace characters into the URI using percent-escapes.
 
 Examples:
 
@@ -522,6 +511,9 @@ Example:
 An ordered map is the same as an unordered map, except that the ordering of the key-value pairs is explicit, and must be preserved.
 
 Ordered maps use the opening parenthesis `(` and closing parenthesis `)` instead of curly braces `{` and `}`.
+
+
+### TODO: Metadata map
 
 
 
