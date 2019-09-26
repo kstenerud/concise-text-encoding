@@ -1,9 +1,6 @@
 Concise Text Encoding
 =====================
 
-A general purpose, human readable representation of semi-structured hierarchical data.
-
-
 Concise Text Encoding (CTE) is a general purpose, human and machine readable, compact representation of semi-structured hierarchical data.
 
 CTE is non-cycic and hierarchical like XML and JSON, and supports the most common data types natively. CTE is type compatible with [Concise Binary Encoding (CBE)](https://github.com/kstenerud/concise-binary-encoding/blob/master/cbe-specification.md), but is a text format for human readability.
@@ -13,8 +10,7 @@ CTE is non-cycic and hierarchical like XML and JSON, and supports the most commo
 TODO
 ----
 
-- Use () for metadata map, matching CBE metadata map.
-- Hex float notation
+- Reference implementation doesn't match the updated spec.
 
 
 
@@ -34,15 +30,21 @@ Contents
 --------
 
 * [Structure](#structure)
+  - [Version Specifier](#version-specifier)
   - [Maximum Depth](#maximum-depth)
+  - [Maximum Length](#maximum-length)
+  - [Line Endings](#line-endings)
 * [Scalar Types](#scalar-types)
   - [Boolean](#boolean)
   - [Integer](#integer)
   - [Floating Point](#floating-point)
+    - [Base-10 Exponential Notation](#base-10-exponential-notation)
+    - [Base-16 Exponential Notation](#base-16-exponential-notation)
     - [Floating Point Rules](#floating-point-rules)
     - [Infinity and Not a Number](#infinity-and-not-a-number)
   - [Numeric Whitespace](#numeric-whitespace)
 * [Temporal Types](#temporal-types)
+  - [Temporal Type Notes](#temporal-type-notes)
   - [Time Zones](#time-zones)
     - [Area/Location](#arealocation)
     - [Global Coordinates](#global-coordinates)
@@ -57,9 +59,11 @@ Contents
   - [List](#list)
   - [Unordered Map](#unordered-map)
   - [Ordered Map](#ordered-map)
+* [Metadata Types](#metadata-types)
+  - [Metadata Map](#metadata-map)
+  - [Comment](#comment)
 * [Other Types](#other-types)
   - [Nil](#nil)
-* [Comments](#comments)
 * [Letter Case](#letter-case)
 * [Whitespace](#whitespace)
 * [Invalid Encodings](#invalid-encodings)
@@ -73,42 +77,76 @@ Structure
 ---------
 
 
-A CTE document is a UTF-8 encoded (with no byte order mark) text document consisting of a single, top-level object of any type. To store multiple values in a CTE document, use a container as the top-level object and store other objects within that container.
+A CTE document is a UTF-8 encoded (with no byte order mark) text document consisting of a version specifier followed by a single, top-level object of any type. To store multiple values in a CTE document, use a container as the top-level object and store other objects within that container.
 
 Whitespace is used to separate elements in a container. In maps, the key and value portions of a key-value pair are separated by an equals character `=` and possible whitespace. The key-value pairs themselves are separated by whitespace.
 
 Example:
 
-    ("_v" = 1)
+    v1
+    (_ct = 2019.9.1-22:14:01)
     {
-        # A comment
+        // A comment
+        /* A multiline
+           comment */
+        (metadata_about_a_list = "something interesting about 'a list'")
         "a list"        = [1 2 "a string"]
-        "unordered map" = {2="two" 3=3000 1="one"}
-        "ordered map"   = <1="one" 2="two" 3=3000>
-        "boolean"       = true
+        "unordered map" = {2=two 3=3000 1=one}
+        "ordered map"   = <1=one 2.5="two and a half" 3=3000>
+        boolean         = true
         "binary int"    = -0b10001011
         "octal int"     = 0o644
         "regular int"   = -10000000
         "hex int"       = 0xfffe0001
-        "float"         = 14.125
-        "time"          = 2019.7.1-18:04:00/Z
+        float           = 14.125
+        time            = 2019.7.1-18:04:00/Z
         "nil"           = nil
-        "bytes"         = h/10 ff 38 9a dd 00 4f 4f 91/
-        "url"           = :https://example.com/
+        bytes           = h"10 ff 38 9a dd 00 4f 4f 91"
+        url             = u"https://example.com/"
+        email           = u"mailto:me@somewhere.com"
         1               = "Keys don't have to be strings"
     }
 
-The top-level object can also be a more simple type, such as:
+The top-level object can also be a simple type, for example:
 
-    "A single string object"
+    v1 "A single string object"
 
 or:
 
-    30.09
+    v1 30.09
+
+
+### Version Specifier
+
+All CTE documents must begin with a version specifier.
+
+The version specifier is the lowercase letter `v` followed immediately by a number representing the version of this specification that the document adheres to (there is no whitespace between the `v` and the number). The version specifier must be followed by whitespace to separate it from the rest of the document.
+
+Examples:
+
+    v1
+    {
+        a = 1
+    }
+
+Or:
+
+    v1 "this is a string"
+
 
 ### Maximum Depth
 
 Since nested objects (in containers such as maps and lists) are possible, it is necessary to impose an arbitrary depth limit to insure interoperability between implementations. For the purposes of this spec, that limit is 1000 levels of nesting from the top level container to the most nested object (inclusive), unless both sending and receiving parties agree to a different max depth.
+
+
+### Maximum Length
+
+Maximum lengths (max list length, max map length, max array length, max total objects in document, max byte length, etc) are implementation defined, and should be negotiated beforehand. A decoder is free to discard documents that threaten to exceed its resources.
+
+
+### Line Endings
+
+Line endings may be encoded as LF only (u+0009) or as CR/LF (u+000d u+0009) to maintain compatibility with editors on various popular platforms. However, for data transmission, the canonical format is LF only. Decoders should accept CR/LF as input, but encoders should only output LF when the destination is not a file.
 
 
 
@@ -129,48 +167,41 @@ Example:
 
 ### Integer
 
-Represents signed integers. Negative values are prefixed with a dash `-` as a sign character. Values must be written in lower case.
+Integer values may be positive or negative, and may be represented in various bases. Negative values are prefixed with a dash `-` as a sign character. Values must be written in lower case.
 
-Integers can be specified in base 2, 8, 10, or 16. Bases other than 10 must be prefixed:
+Integers may be specified in base 2, 8, 10, or 16. Bases other than 10 must be prefixed:
 
-| Base | Name        | Digits           | Prefix |
-| ---- | ----------- | ---------------- | ------ |
-|   2  | Binary      | 01               | 0b     |
-|   8  | Octal       | 01234567         | 0o     |
-|  10  | Decimal     | 0123456789       |        |
-|  16  | Hexadecimal | 0123456789abcdef | 0h     |
-
-Examples:
-
-| Notation   | Notational Base | Base-10 Equivalent |
-| ---------- | --------------- | ------------------ |
-| -0b1100    |               2 |                -12 |
-| 0o755      |               8 |                493 |
-| 900000     |              10 |             900000 |
-| 0xdeadbeef |              16 |         3735928559 |
+| Base | Name        | Digits           | Prefix | Example    | Decimal Equivalent |
+| ---- | ----------- | ---------------- | ------ | ---------- | ------------------ |
+|   2  | Binary      | 01               | 0b     |    -0b1100 |                -12 |
+|   8  | Octal       | 01234567         | 0o     |      0o755 |                493 |
+|  10  | Decimal     | 0123456789       |        |     900000 |             900000 |
+|  16  | Hexadecimal | 0123456789abcdef | 0h     | 0xdeadbeef |         3735928559 |
 
 
 ### Floating Point
 
-A floating point number is composed of a whole part and a fractional part, separated by a dot `.`, with an optional exponential portion. Negative values are prefixed with a dash `-`.
+A floating point number is composed of a whole part and a fractional part, separated by a dot `.`, with an optional exponential portion. Negative values are prefixed with a dash `-`. If no exponential portion is present, the floating point value is assumed to be in base-10.
 
     1.0
     -98.413
 
-The exponential portion is denoted by the lowercase character `e`, followed by the signed size of the base-10 exponent. Values with exponential fields must be normalized.
+#### Base-10 Exponential Notation
+
+The exponential portion of a base-10 number is denoted by the lowercase character `e`, followed by the signed size of the base-10 exponent. Values must be normalized (only one digit to the left of the decimal point).
 
     6.411e+9 = 6411000000
     6.411e-9 = 0.000000006411
 
-There is no maximum number of significant digits, but care must be taken to ensure that the receiving end will be able to store the value.
+There is no maximum number of significant digits or exponent digits, but care must be taken to ensure that the receiving end will be able to store the value. 64-bit ieee754 floating point values, for example, can store up to 16 significant digits.
 
-Numbers must be written in lower case.
+#### Base-16 Exponential Notation
 
-There are two types of floating point numbers supported: binary and decimal.
+Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion itself is a base-10 number representing the power-of-2 to multiply the significand by. Values must be normalized.
 
+     1.3dep42 = 1.3de (base 16) x 2 ^ 42
 
-TODO: Take description from CBE
-
+Base-16 notation should only be used to support legacy systems that can't handle decimal rounded values. Decimal floating point values tend to be smaller, and also avoid the false precision of binary floating point values. [More info](https://github.com/kstenerud/compact-float/blob/master/compact-float-specification.md#how-much-precision-do-you-need)
 
 #### Floating Point Rules
 
@@ -194,7 +225,7 @@ TODO: Take description from CBE
 | .218901e+2 | 21.8901 | Or 2.18901e+1                                        |
 | -0         | -0.0    | Special case: -0 cannot be represented as an integer |
 
-**Exponential notation must be normalized (one digit, non-zero, to the left of the dot):**
+**Values with exponential notation must be normalized (one digit, non-zero, to the left of the dot):**
 
 | Invalid    | Valid      |
 | ---------- | ---------- |
@@ -211,12 +242,8 @@ The following are special floating point values:
 
  * `inf`: Infinity
  * `-inf`: Negative Infinity
- * `nan`: Not a Number (non-signaling)
-
-TODO: Allow sign, signling
-
-TODO: nan cannot be used as a map key
-
+ * `nan`: Not a Number (quiet)
+ * `snan`: Not a Number (signaling)
 
 
 ### Numeric Whitespace
@@ -225,18 +252,17 @@ The `_` character may be used as "numeric whitespace" when encoding numeric valu
 
 Rules:
 
-* Numeric values of any type may contain any amount of whitespace at any point after the first character.
-* Numeric values must not begin with numeric whitespace.
-* Special named values `nan` and `inf` must not contain whitespace.
+* Numeric values of any type may contain any amount of whitespace at any point after the first digit and before the last digit.
+* Special named values `nan`, `snan`, and `inf` must not contain whitespace.
 
 | Value       | Valid Whitespace     | Invalid Whitespace | Notes                                         |
 | ----------- | -------------------- | ------------------ | --------------------------------------------- |
 | `1000000`   | `1_000_000`          | `_1_000_000`       | `_1_000_000` would be interpreted as a string |
-| `-7.4e+100` | `-_7_._4__e_+___100` | `_-7.4e+100`       |                                               |
+| `-7.4e+100` | `-7_._4__e_+___100`  | `-_7.4e+100`       |                                               |
 | `nan`       | `nan`                | `n_an`             | `n_an` would be interpreted as a string       |
 | `-inf`      | `-inf`               | `-inf_`            |                                               |
 
-Numeric whitespace characters must be ignored while decoding numeric values.
+Numeric whitespace characters must be ignored when decoding numeric values.
 
 
 
@@ -246,7 +272,7 @@ Temporal Types
 The temporal types deal with time.
 
 
-### Notes
+### Temporal Type Notes
 
 #### Field Width
 
@@ -278,7 +304,7 @@ If the time zone is unspecified, it is assumed to be `Zero` (UTC).
 
 #### Area/Location
 
-The area/location method is the more human-readable of the two, but may not be precise enough for certain applications. Time zones are partitioned into areas containing locations, and are written in the form `Area/Location`. These areas and locations are specified in the [IANA time zone database](https://www.iana.org/time-zones).
+The area/location method is the more human-readable of the two, but may not be precise enough for certain applications. Time zones are partitioned into areas containing locations, and are written in the form `Area/Location`. These areas and locations are specified in the [IANA time zone database](https://www.iana.org/time-zones). Area/Location timezones are case-sensitive because they tend to be implemented that way on most platforms.
 
 ##### Abbreviated Areas
 
@@ -365,7 +391,7 @@ A time is made up of the following fields:
 
 * Hours are always written according to the 24h clock (21:00, not 9:00 PM).
 * Minutes and seconds must always be padded to 2 digits.
-* Since there is no date component, time zone data must be interpreted as if it were "today", and so the time may not remain constant should the political situation at that time zone change at a later date.
+* Since there is no date component, time zone data must be interpreted as if it were "today", and so the time may not remain constant should the political situation at that time zone change at a later date (except when using `Etc/GMT+1`, etc).
 * If the time zone is unspecified, it is assumed to be `Zero` (UTC).
 
 #### Examples
@@ -392,45 +418,44 @@ A timestamp combines a date and a time, separated by a dash character (`-`).
 Array Types
 -----------
 
+An "array" for the purposes of this spec represents a contiguous sequence of octets.
+
+
 ### Bytes
 
 An array of octets. This data type should only be used as a last resort if the other data types cannot represent the data you need. To reduce cross-platform confusion, multibyte data types stored within the binary blob should be represented in little endian order whenever possible.
 
-Byte array data is enclosed in forward slashes `/`, and is prefixed by the encoding type. The encoded contents may contain whitespace at any point.
+Byte array data is enclosed in double quotes `"`, and is prefixed by the encoding type. The encoded contents may contain whitespace at any point.
 
 Encoding Types:
 
 Supported encoding types are [hex](https://github.com/kstenerud/safe-encoding/blob/master/safe16-specification.md), [safe64](https://github.com/kstenerud/safe-encoding/blob/master/safe64-specification.md), and [safe85](https://github.com/kstenerud/safe-encoding/blob/master/safe85-specification.md). You can choose your encoding type based on your size constraints and desired features.
 
-| Type   | Prefix | Bloat | Features                               |
-| ------ | ------ | ----- | -------------------------------------- |
-| Hex    |    h   | 2.0   | Human readable, fast encoding/decoding |
-| Safe64 |    6   | 1.33  | Fast encoding/decoding                 |
-| Safe85 |    8   | 1.25  | Smallest size                          |
+| Type   | Prefix | Bloat | Features                                |
+| ------ | ------ | ----- | --------------------------------------- |
+| Hex    |    h   | 2.0   | Human readable, fast encoding/decoding  |
+| Safe64 |    6   | 1.33  | Fast encoding/decoding                  |
+| Safe85 |    8   | 1.25  | Smallest size, slower encoding/decoding |
 
 #### Examples
 
-    h/39 12 82 e1 81 39 d9 8b 39 4c 63 9d 04 8c/
+    h"39 12 82 e1 81 39 d9 8b 39 4c 63 9d 04 8c"
 
-    h/1 f 4 8 ae 4 56 3/ # looks terrible, but is valid
+    h"1 f 4 8 ae 4 56 3" # looks terrible, but is valid
 
-    8/8F2{*RVCLI8LDzZ!3e/
+    8"8F2{*RVCLI8LDzZ!3e"
 
-    8/CmsAT9+UpvN!1v=H_SgpMm@mDHDFy(I[~!{I@2
+    8"CmsAT9+UpvN!1v=H_SgpMm@mDHDFy(I[~!{I@2
     yx1MU*1I[u!)NL20.1LOvFN-+cu1M_VMH_)d)HD=
     T)I6F~3Ml=.;JP_@>Ln!H$N-xV.1MUpTNKoD71L(
-    nBIZop{LR-.0Nh}Y.1ML**I>@ziISc.1OfbXN/
+    nBIZop{LR-.0Nh}Y.1ML**I>@ziISc.1OfbXN"
 
 
 ### String
 
-TODO: Strings may not need quotes:
-- similar rules to identifiers in programming languages
-- do not begin with numerals or any symbol other than `_`
-- do not contain spaces
-- do not conflict with other defined objects like true, false, t, f, nil, nan, inf, etc
+An array of UTF-8 encoded bytes, without a byte order mark (BOM). Strings must not contain NUL (u+0000) or escape sequences that evaluate to NUL.
 
-An array of UTF-8 encoded bytes, without a byte order mark (BOM). Strings must be enclosed in double-quotes `"`, and cannot contain values or sequences that evaluate to NUL.
+Strings must be enclosed in double-quotes `"`. Literal double quotes and backslashes `\` within the string must be escaped.
 
 The following escape sequences are allowed inside a string's contents, and must be in lower case:
 
@@ -444,26 +469,48 @@ The following escape sequences are allowed inside a string's contents, and must 
 | `\x01` - `\xff`     | one octet, hexadecimal notation |
 | `\u0001` - `\uffff` | unicode character               |
 
-Strings must always resolve to complete, valid unicode sequences when fully decoded (after evaluating backslash sequences).
+Strings must always resolve to complete, valid unicode characters when fully decoded (after evaluating escape sequences).
+
+
+#### Line Breaks and Whitespace
+
+Care should be taken to ensure that CTE documents can be easily edited in a text editor. For this reason, it is preferable to encode line breaking characters and certain whitespace characters (such as TAB) using escape sequences rather than the bare character coding.
+
+Note: While carriage return (u+000d) is technically allowed in strings, line endings should be converted to linefeed (u+0009) whenever possible to maximize compatibiity between systems.
+
+#### Unquoted String
+
+Normally, strings must be enclosed in double-quotes `"`, but this rule may be relaxed if:
+
+* The string does not contain characters from u+0000 to u+007f - except for lowercase a-z, uppercase A-Z, and underscore (`_`).
+* The string does not start with a numeral `[0-9]`.
+* The string does not clash with existing CTE keywords such as `nil`, `inf`, `true`, `false`, `t`, `f`, etc.
+* The string does not contain escape sequences or whitespace or line breaks.
+
+Care must be taken that the string values you use are visible and editable in text editors.
 
 #### Example
 
     "A string\twith\ttabs\nand\nnewlines"
 
+    a_bare_string
+
 
 ### URI
 
-Uniform Resource Identifier, structured in accordance with [RFC 3986](https://tools.ietf.org/html/rfc3986). URIs are prefixed with a colon character (`:`) and end with a whitespace character. You can encode whitespace characters into the URI using percent-escapes.
+Uniform Resource Identifier, structured in accordance with [RFC 3986](https://tools.ietf.org/html/rfc3986). URIs are prefixed with a lowercase `u` and enclosed in double-quotes `"`.
+
+Note: Percent-encoding sequences within URIs are NOT interpreted; they are passed through as-is.
 
 Examples:
 
-    :https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top
+    u"https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top"
 
-    :mailto:John.Doe@example.com
+    u"mailto:John.Doe@example.com"
 
-    :urn:oasis:names:specification:docbook:dtd:xml:4.1.2
+    u"urn:oasis:names:specification:docbook:dtd:xml:4.1.2"
 
-    :https://example.com/percent-encoding/?double-quote=%22
+    u"https://example.com/percent-encoding/?double-quote=%22"
 
 
 
@@ -485,17 +532,18 @@ Example:
 
 ### Unordered Map
 
-A unordered map associates objects (keys) with other objects (values), storing the key-value pairs in no particular order. Implementations must not rely on any incidental ordering. Keys may be any mix of scalar or array types. A key must not be a container type or the `nil` type. Values may be any mix of any type, including other containers. All keys in a map must resolve to a unique value, even across data types. For example, the following keys would clash:
+A unordered map associates objects (keys) with other objects (values), storing the key-value pairs in no particular order. Implementations must not rely on any incidental ordering. Keys may be any mix of scalar or array types. A key must not be a container type, the `nil` type, or any value that evaluates to NaN (not-a-number). Values may be any mix of any type, including other containers.
+
+All keys in a map must resolve to a unique value, even across data types. For example, the following keys would clash:
 
  * 2000
  * 2000.0
- * 2000.0d
 
 Map entries are split into key-value pairs using the equals `=` character and optional whitespace. Key-value pairs are separated from each other using whitespace. A key without a paired value is not allowed in a map.
 
 A map begins with an opening curly brace `{`, whitespace separated key-value pairs, and finally a closing brace `}`.
 
-Note: While this spec allows mixed types in maps, not all languages do. Use mixed types with caution.
+Note: While this spec allows mixed types in maps, not all languages do. Use mixed types with caution. A decoder may abort processing or ignore key-value pairs of mixed key types if the implementation language doesn't support it.
 
 Example:
 
@@ -508,12 +556,112 @@ Example:
 
 ### Ordered Map
 
-An ordered map is the same as an unordered map, except that the ordering of the key-value pairs is explicit, and must be preserved.
+An ordered map works the same as an unordered map, except that the order of the key-value pairs in the map is significant, and must be preserved.
 
-Ordered maps use the opening parenthesis `(` and closing parenthesis `)` instead of curly braces `{` and `}`.
+Ordered maps use angle brackets `<` and `>` instead of curly braces `{` and `}`.
 
 
-### TODO: Metadata map
+
+Metadata Types
+--------------
+
+Metadata is data about the data. It describes things about whatever data follows it in a document, which may or may not necessarily be of interest to a consumer of the data. For this reason, decoders are free to ignore and discard metadata if they so choose. Senders and receivers should negotiate beforehand how to react to metadata.
+
+
+### Metadata Association
+
+Metadata objects are pseudo-objects that can be placed anywhere a real object can be placed, but do not count as objects themselves. Instead, metadata is associated with the object that follows it. For example:
+
+    (map) ("a key") (metadata) ("a value") (end)
+
+In this case, the metadata refers to the value `"a value"`, but the actual data for purposes of decoding the map is `(map) ("a key") ("a value") (end)`.
+
+    (map) ("a key") (metadata) (end)
+
+This map is invalid, because it resolves to `(map) ("a key") (end)`, with no value associated with the key (the metadata doesn't count).
+
+Metadata can also refer to other metadata, for example:
+
+    (map) (metadata-1) (metadata) ("a key") ("a value") (end)
+
+In this case, `(metadata)` refers to the string `"a key"`, and `(metadata-1)` refers to `(metadata)`. The actual map is `(map) ("a key") ("a value") (end)`.
+
+#### Exception: Comments
+
+The metadata association rules do not apply to [comments](#comment). Comments stand entirely on their own, and do not officially refer to anything, nor can any other metadata refer to a comment (i.e. comments are invisible to other metadata).
+
+
+### Metadata Map
+
+A metadata map is an ordered map containing metadata about the object that follows the map. A metadata map may contain anything that an ordered map can, but all string keys that begin with an underscore (`_`) are reserved, and must not be used except in the ways defined by this specification.
+
+Metadata map contents are enclosed within parenthesis: `(` and `)`
+
+The following are predefined metadata keys that must be used for that type of information:
+
+| Key   | Type          | Contents          |
+| ----- | ------------- | ----------------- |
+| `_ct` | Timestamp     | Creation time     |
+| `_mt` | Timestamp     | Modification time |
+| `_at` | Timestamp     | Last access time  |
+| `_t`  | List          | Set of tags       |
+| `_a`  | Unordered Map | Attributes        |
+
+All other metadata keys beginning with `_` are reserved for future expansion, and must not be used.
+
+Note: Metadata must not be placed before the [version specifier](#version-specifier).
+
+
+### Comment
+
+Comments are user-defined string metadata equivalent to comments in a source code document. Comments do not officially refer to other objects, although conventionally they tend to refer to what follows in the document, be it a single object, a series of objects, a distant object, or they might even be entirely standalone. This is similar to how source code comments are used.
+
+Comment contents must contain only complete and valid UTF-8 sequences. Escape sequences in comments are not interpreted (they are passed through verbatim).
+
+Comments may be written in single-line or multi-line form. The single-line form starts with a double slash `//` and ends at a newline. The multi-line form starts with the sequence `/*` and ends with the sequence `*/`. They operate similarly to how comments operate in C-like languages. Nested multiline comments are not allowed.
+
+Note: Comments must not be placed before the [version specifier](#version-specifier).
+
+#### Comment Character Restrictions
+
+The following characters are explicitly allowed:
+
+ * Horizontal Tab (u+0009)
+ * Linefeed (u+000a)
+ * Carriage Return (u+000d)
+
+The following characters are disallowed if they aren't in the above allowed section:
+
+ * Control characters (such as u+0000 to u+001f, u+007f to u+009f).
+ * Line breaking characters (such as u+2028, u+2029).
+ * Byte order mark.
+
+The following characters are allowed if they aren't in the above disallowed section:
+
+ * UTF-8 printable characters
+ * UTF-8 whitespace characters
+
+#### Example
+
+    v1
+    // Comment before top level object
+    {
+        // Comment before the "name" object.
+        // And another comment.
+        "name" = "Joe Average" // Comment after the "Joe Average" object.
+        "email" = // Comment after the "email" key.
+        /* Multiline comment with nested single line comment inside
+        u"mailto:joe@average.org" // Comment after email
+        */
+        u"mailto:someone@somewhere.com"
+        "data" // Comment after data
+        =
+        //
+        // Comment before some binary data (but not inside it)
+        h"01 02 03 04 05 06 07 08 09 0a"
+    }
+    // Comments at the
+    // end of the document.
 
 
 
@@ -532,63 +680,6 @@ Example:
 
 
 
-Comments
---------
-
-Comments may be placed before or after any object. Any number of comments may occur in a row. A parser is free to preserve or discard comments.
-
-Comment contents must contain only complete and valid UTF-8 sequences. Escape sequences in comments are not interpreted (they are passed through verbatim).
-
-A comment begins with a `#` character, followed by an optional space (U+0020) which is discarded if present. If multiple spaces follow the `#`, only the first is discarded. Everything else up to (but not including) the next carriage return (U+000D) or newline (U+000A), including whitespace, is preserved as-is.
-
-
-### Illustration (using underscore `_` to represent space U+0020)
-
-| CTE Document    | Comment Value |
-| --------------- | ------------- |
-| `#`             | (empty)       |
-| `#_`            | (empty)       |
-| `#__`           | `_`           |
-| `#A_comment`    | `A_comment`   |
-| `#_A_comment`   | `A_comment`   |
-| `#__A_comment_` | `_A_comment_` |
-
-
-### Character Restrictions
-
-The following characters are disallowed:
-
- * Control characters (Unicode u+0000 to u+001f, u+007f to u+009f) with the exception of:
-   - Horizontal Tab (u+0009)
- * Line breaking characters (such as u+2028, u+2029).
- * Byte order mark.
-
-The following characters are allowed in comments if they aren't in the above disallowed list:
-
- * UTF-8 printable characters
- * UTF-8 whitespace characters
-
-
-### Example
-
-    # Comment before top level object
-    {
-        # Comment before the "name" object.
-        # And another comment.
-        "name" = "Joe Average" # Comment before the "email" object.
-        "email" = # Comment before the "joe@average.org" object.
-        "joe@average.org"
-        "numbers" # Comment after numbers
-        =
-        #
-        # Comment before some binary data (but not inside it)
-        h"01 02 03 04 05 06 07 08 09 0a"
-    }
-    # Comments at the
-    # end of the document.
-
-
-
 Letter Case
 -----------
 
@@ -596,7 +687,7 @@ A CTE document must be entirely in lower case, with the following exceptions:
 
  * String and comment contents: `"A string may contain UPPER CASE. Escape sequences must be lower case: \x3d"`
  * [Time zones](#time-zone) are case sensitive, and contain uppercase characters.
- * Safe85 encoding makes use of uppercase characters in its code table.
+ * Safe85 and Safe64 encodings make use of uppercase characters in their code tables.
 
 Everything else, including hexadecimal digits, exponents and escape sequences, must be lower case.
 
@@ -624,13 +715,13 @@ While there are many characters classified as "whitespace" within the Unicode se
 
  * Before an object (including at the beginning of a document)
  * After an object (including at the end of a document)
- * Between array/container openings & closings: `[`, `]`, `{`, `}`, `(`, `)`, `/`
- * Between encoding characters in a byte array.
+ * Between array/container openings & closings: `[`, `]`, `{`, `}`, `<`, `>`, `(`, `)`
+ * Between encoding characters in a byte array, and array delimiters.
 
 Examples:
 
  * `[   1     2      3 ]` is equivalent to `[1 2 3]`
- * `h/ 01 02 03   0 4 /` is equivalent to `h/01020304/`
+ * `h" 01 02 03   0 4 "` is equivalent to `h"01020304"`
  * `{ 1="one" 2 = "two" 3= "three" 4 ="four"}` is equivalent to `{1="one" 2="two" 3="three" 4="four"}`
 
 
@@ -653,7 +744,7 @@ Examples:
     "This string has spaces
     and a newline, which are all preserved."
 
-    # Comment whitepsace      is preserved.
+    // Comment whitepsace      is preserved.
 
 
 
@@ -664,27 +755,31 @@ Invalid encodings must not be used, as they may cause problems or even API viola
 
  * Numeric values must be representable in their respective binary formats (integer, binary float, decimal float).
  * Times must be valid. For example: 2000.2.30, while technically encodable, is not allowed.
- * Map keys must not be container types or the `nil` type.
- * Maps must not contain duplicate keys (this includes mathematically equivalent numeric keys).
+ * Containers must be properly terminated. Extra container endings (`}`, `]`, etc) are invalid.
+ * All map keys must have corresponding values. A key with a missing value is invalid.
+ * Map keys must not be container types, the `nil` type, or values the resolve to NaN (not-a-number).
+ * Maps must not contain duplicate keys. This includes numeric keys of different types that resolve to the same value.
+ * All UTF-8 sequences must evaluate to complete, valid characters.
+ * Metadata keys beginning with `_` must not be used, except for those listed in this specifiction.
+ * Nested multiline comments are not allowed.
  * Upper case text is not allowed, except as described in section [Letter Case](#letter-case).
  * Whitespace must only occur as described in section [Whitespace](#whitespace).
- * Incomplete or invalid UTF-8 sequences are not allowed.
 
 
 
 File Format
 -----------
 
-A CTE file is simply a file containing a single CTE document. Recall that a CTE document consists of a single top-level object, and that you can store multiple objects by making the top level object a container. CTE files should be named using the extension `cte`.
+A CTE file is simply a file containing a single CTE document. Recall that a CTE document consists of a version specifier and a single top-level object, and that you can store multiple objects by making the top level object a container. CTE files should be named using the extension `cte`.
 
 For example: File `mydata.cte`
 
-    # This is an example CTE document.
-    # Remember: Any number of comments can appear in a row.
+    v1
+    // This is an example CTE document.
     {
-        # Here are some mapped values...
-        "first" = 1
-        "second" = 2
+        // Some mapped values...
+        first = 1
+        second = 2
     }
 
 
