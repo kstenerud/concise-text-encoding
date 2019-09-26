@@ -686,7 +686,7 @@ Letter Case
 A CTE document must be entirely in lower case, with the following exceptions:
 
  * String and comment contents: `"A string may contain UPPER CASE. Escape sequences must be lower case: \x3d"`
- * [Time zones](#time-zone) are case sensitive, and contain uppercase characters.
+ * [Time zones](#time-zones) are case sensitive, and contain uppercase characters.
  * Safe85 and Safe64 encodings make use of uppercase characters in their code tables.
 
 Everything else, including hexadecimal digits, exponents and escape sequences, must be lower case.
