@@ -34,7 +34,7 @@ Contents
   - [Maximum Depth](#maximum-depth)
   - [Maximum Length](#maximum-length)
   - [Line Endings](#line-endings)
-* [Scalar Types](#scalar-types)
+* [Numeric Types](#numeric-types)
   - [Boolean](#boolean)
   - [Integer](#integer)
   - [Floating Point](#floating-point)
@@ -150,8 +150,8 @@ Line endings may be encoded as LF only (u+0009) or as CR/LF (u+000d u+0009) to m
 
 
 
-Scalar Types
-------------
+Numeric Types
+-------------
 
 ### Boolean
 

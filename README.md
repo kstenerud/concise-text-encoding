@@ -55,14 +55,14 @@ Supported Types
 ---------------
 
 
-### Scalar Types
+### Numeric Types
 
 | Type          | Description                                           |
 | ------------- | ----------------------------------------------------- |
 | Boolean       | True or false                                         |
-| Integer       | Signed integers                                       |
-| Float         | Floating point, interpreted as IEEE 754 binary        |
-| Decimal       | Floating point, interpreted as IEEE 754 decimal       |
+| Integer       | Signed two's complement integer                       |
+| Decimal Float | Compressed decimal floating point                     |
+| Binary Float  | IEEE 754 binary floating point                        |
 
 
 ### Temporal Types
