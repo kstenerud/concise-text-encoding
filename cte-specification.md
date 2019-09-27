@@ -81,7 +81,7 @@ A CTE document is a UTF-8 encoded (with no byte order mark) text document consis
 
 Whitespace is used to separate elements in a container. In maps, the key and value portions of a key-value pair are separated by an equals character `=` and possible whitespace. The key-value pairs themselves are separated by whitespace.
 
-Example:
+#### Example
 
     v1
     (_ct = 2019.9.1-22:14:01)
@@ -122,7 +122,7 @@ All CTE documents must begin with a version specifier.
 
 The version specifier is the lowercase letter `v` followed immediately by a number representing the version of this specification that the document adheres to (there is no whitespace between the `v` and the number). The version specifier must be followed by whitespace to separate it from the rest of the document.
 
-Examples:
+#### Examples
 
     v1
     {
@@ -159,7 +159,7 @@ Supports the values `true` and `false`.
 
 You may also use the aliases `t` and `f`.
 
-Example:
+#### Example
 
     true
     false
@@ -171,12 +171,12 @@ Integer values may be positive or negative, and may be represented in various ba
 
 Integers may be specified in base 2, 8, 10, or 16. Bases other than 10 must be prefixed:
 
-| Base | Name        | Digits           | Prefix | Example    | Decimal Equivalent |
-| ---- | ----------- | ---------------- | ------ | ---------- | ------------------ |
-|   2  | Binary      | 01               | 0b     |    -0b1100 |                -12 |
-|   8  | Octal       | 01234567         | 0o     |      0o755 |                493 |
-|  10  | Decimal     | 0123456789       |        |     900000 |             900000 |
-|  16  | Hexadecimal | 0123456789abcdef | 0h     | 0xdeadbeef |         3735928559 |
+| Base | Name        | Digits           | Prefix | Example      | Decimal Equivalent |
+| ---- | ----------- | ---------------- | ------ | ------------ | ------------------ |
+|   2  | Binary      | 01               | 0b     | `-0b1100`    | -12                |
+|   8  | Octal       | 01234567         | 0o     | `0o755`      | 493                |
+|  10  | Decimal     | 0123456789       |        | `900000`     | 900000             |
+|  16  | Hexadecimal | 0123456789abcdef | 0h     | `0xdeadbeef` | 3735928559         |
 
 
 ### Floating Point
@@ -190,8 +190,8 @@ A floating point number is composed of a whole part and a fractional part, separ
 
 The exponential portion of a base-10 number is denoted by the lowercase character `e`, followed by the signed size of the base-10 exponent. Values must be normalized (only one digit to the left of the decimal point).
 
-    6.411e+9 = 6411000000
-    6.411e-9 = 0.000000006411
+* `6.411e+9` = 6411000000
+* `6.411e-9` = 0.000000006411
 
 There is no maximum number of significant digits or exponent digits, but care must be taken to ensure that the receiving end will be able to store the value. 64-bit ieee754 floating point values, for example, can store up to 16 significant digits.
 
@@ -199,7 +199,7 @@ There is no maximum number of significant digits or exponent digits, but care mu
 
 Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion itself is a base-10 number representing the power-of-2 to multiply the significand by. Values must be normalized.
 
-     1.3dep42 = 1.3de (base 16) x 2 ^ 42
+* `1.3dep42` = 1.3de (base 16) x 2 ^ 42
 
 Base-16 notation should only be used to support legacy systems that can't handle decimal rounded values. Decimal floating point values tend to be smaller, and also avoid the false precision of binary floating point values. [More info](https://github.com/kstenerud/compact-float/blob/master/compact-float-specification.md#how-much-precision-do-you-need)
 
@@ -207,33 +207,33 @@ Base-16 notation should only be used to support legacy systems that can't handle
 
 **There must be one (and only one) dot character:**
 
-| Value        | Notes              |
-| ------------ | ------------------ |
-| 1            | Integer, not float |
-| 1.0          | Float              |
-| 500000000000 | Integer, not float |
-| 5.0e+11      | Float              |
-| 5e+11        | Invalid            |
-| 10.4.5       | Invalid            |
+| Value          | Notes              |
+| -------------- | ------------------ |
+| `1`            | Integer, not float |
+| `1.0`          | Float              |
+| `500000000000` | Integer, not float |
+| `5.0e+11`      | Float              |
+| `5e+11`        | Invalid            |
+| `10.4.5`       | Invalid            |
 
 **There must be at least one digit on each side of the dot character:**
 
-| Invalid    | Valid   | Notes                                                |
-| ---------- | ------- | ---------------------------------------------------- |
-| -1.        | -1.0    | Or use integer value -1                              |
-| .1         | 0.1     |                                                      |
-| .218901e+2 | 21.8901 | Or 2.18901e+1                                        |
-| -0         | -0.0    | Special case: -0 cannot be represented as an integer |
+| Invalid      | Valid     | Notes                                                |
+| ------------ | --------- | ---------------------------------------------------- |
+| `-1.`        | `-1.0`    | Or use integer value -1                              |
+| `.1`         | `0.1`     |                                                      |
+| `.218901e+2` | `21.8901` | Or `2.18901e+1`                                      |
+| `-0`         | `-0.0`    | Special case: -0 cannot be represented as an integer |
 
 **Values with exponential notation must be normalized (one digit, non-zero, to the left of the dot):**
 
-| Invalid    | Valid      |
-| ---------- | ---------- |
-| 22e+50     | 2.2e+51    |
-| 508.44e+10 | 5.0844e+12 |
-| -1000e+5   | -1.0e+8    |
-| 65.0e-20   | 6.5e-21    |
-| 0.5e+10    | 5.0e+11    |
+| Invalid      | Valid        |
+| ------------ | ------------ |
+| `22e+50`     | `2.2e+51`    |
+| `508.44e+10` | `5.0844e+12` |
+| `-1000e+5`   | `-1.0e+8`    |
+| `65.0e-20`   | `6.5e-21`    |
+| `0.5e+10`    | `5.0e+11`    |
 
 
 #### Infinity and Not a Number
@@ -367,9 +367,9 @@ A date is made up of the following fields, separated by a period character (`.`)
 
 #### Examples
 
-* August 5, 2019: `2019.8.5`
-* March 30, 5081: `5081.03.30`
-* December 21, 300 BC (proleptic Gregorian): `-300.12.21`
+* `2019.8.5`: August 5, 2019
+* `5081.03.30`: March 30, 5081
+* `-300.12.21`: December 21, 300 BC (proleptic Gregorian)
 
 
 
@@ -396,12 +396,12 @@ A time is made up of the following fields:
 
 #### Examples
 
-* `9:04:21` (9:04:21 UTC)
-* `23:59:59.999999999` (23:59:59 and 999999999 nanoseconds UTC)
-* `12:05:50.102/Z` (12:05:50 and 102 milliseconds UTC)
-* `4:00:00/Asia/Tokyo` (4:00:00 Tokyo time)
-* `17:41:03/-13.54/-172.36` (17:41:03 Samoa time)
-* `9:00:00/L` (9:00:00 local time)
+* `9:04:21`: 9:04:21 UTC
+* `23:59:59.999999999`: 23:59:59 and 999999999 nanoseconds UTC
+* `12:05:50.102/Z`: 12:05:50 and 102 milliseconds UTC
+* `4:00:00/Asia/Tokyo`: 4:00:00 Tokyo time
+* `17:41:03/-13.54/-172.36`: 17:41:03 Samoa time
+* `9:00:00/L`: 9:00:00 local time
 
 
 ### Timestamp
@@ -484,7 +484,7 @@ Normally, strings must be enclosed in double-quotes `"`, but this rule may be re
 
 * The string does not contain characters from u+0000 to u+007f - except for lowercase a-z, uppercase A-Z, and underscore (`_`).
 * The string does not start with a numeral `[0-9]`.
-* The string does not clash with existing CTE keywords such as `nil`, `inf`, `true`, `false`, `t`, `f`, etc.
+* The string does not clash with existing CTE keywords such as `nil`, `inf`, `nan`, `snan`, `true`, `false`, `t`, `f`, etc.
 * The string does not contain escape sequences or whitespace or line breaks.
 
 Care must be taken that the string values you use are visible and editable in text editors.
@@ -502,7 +502,7 @@ Uniform Resource Identifier, structured in accordance with [RFC 3986](https://to
 
 Note: Percent-encoding sequences within URIs are NOT interpreted; they are passed through as-is.
 
-Examples:
+#### Examples
 
     u"https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top"
 
@@ -525,9 +525,9 @@ A list begins with an opening square bracket `[`, whitespace separated contents,
 
 Note: While this spec allows mixed types in lists, not all languages do. Use mixed types with caution.
 
-Example:
+#### Example
 
-    [1 "two" 3.1 {} nil]
+    [1 two 3.1 {} nil]
 
 
 ### Unordered Map
@@ -536,8 +536,8 @@ A unordered map associates objects (keys) with other objects (values), storing t
 
 All keys in a map must resolve to a unique value, even across data types. For example, the following keys would clash:
 
- * 2000
- * 2000.0
+ * `2000`
+ * `2000.0`
 
 Map entries are split into key-value pairs using the equals `=` character and optional whitespace. Key-value pairs are separated from each other using whitespace. A key without a paired value is not allowed in a map.
 
@@ -545,11 +545,11 @@ A map begins with an opening curly brace `{`, whitespace separated key-value pai
 
 Note: While this spec allows mixed types in maps, not all languages do. Use mixed types with caution. A decoder may abort processing or ignore key-value pairs of mixed key types if the implementation language doesn't support it.
 
-Example:
+#### Example
 
     {
-        1 = "alpha"
-        2 = "beta"
+        1 = alpha
+        2 = beta
         "a map" = {one = 1}
     }
 
@@ -559,6 +559,14 @@ Example:
 An ordered map works the same as an unordered map, except that the order of the key-value pairs in the map is significant, and must be preserved.
 
 Ordered maps use angle brackets `<` and `>` instead of curly braces `{` and `}`.
+
+#### Example
+
+    <
+        first = "This is the first item"
+        new_second = "This is the second item"
+        old_second = "This used to be the second item"
+    >
 
 
 
@@ -610,6 +618,26 @@ The following are predefined metadata keys that must be used for that type of in
 All other metadata keys beginning with `_` are reserved for future expansion, and must not be used.
 
 Note: Metadata must not be placed before the [version specifier](#version-specifier).
+
+#### Example
+
+    v1
+    {
+        records = [
+            ( _ct = 2019.05.14-10:22:55/Z )
+            {
+                client = "ABC Corp"
+                amount = 10499.28
+                due = 2020.05.14
+            }
+            ( _ct = 2019.02.30-09:00:01/Z  _mt = 2019.08.17-12:44:31/Z )
+            {
+                client = "XYZ Corp"
+                amount = 3994.01
+                due = 2020.08.30
+            }
+        ]
+    }
 
 
 ### Comment
@@ -674,7 +702,7 @@ Denotes the absence of data. Some languages implement this as the `null` value.
 
 Note: Use nil judiciously and sparingly, as some languages may have restrictions on how and if it may be used.
 
-Example:
+#### Example
 
     nil
 
