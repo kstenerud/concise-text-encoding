@@ -67,7 +67,6 @@ Contents
 * [Letter Case](#letter-case)
 * [Whitespace](#whitespace)
 * [Invalid Encodings](#invalid-encodings)
-* [File Format](#file-format)
 * [Version History](#version-history)
 * [License](#license)
 
@@ -792,23 +791,6 @@ Invalid encodings must not be used, as they may cause problems or even API viola
  * Nested multiline comments are not allowed.
  * Upper case text is not allowed, except as described in section [Letter Case](#letter-case).
  * Whitespace must only occur as described in section [Whitespace](#whitespace).
-
-
-
-File Format
------------
-
-A CTE file is simply a file containing a single CTE document. Recall that a CTE document consists of a version specifier and a single top-level object, and that you can store multiple objects by making the top level object a container. CTE files should be named using the extension `cte`.
-
-For example: File `mydata.cte`
-
-    v1
-    // This is an example CTE document.
-    {
-        // Some mapped values...
-        first = 1
-        second = 2
-    }
 
 
 
