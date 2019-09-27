@@ -597,15 +597,15 @@ A metadata map is an ordered map containing metadata about the object that follo
 
 Metadata map contents are enclosed within parenthesis: `(` and `)`
 
-The following are predefined metadata keys that must be used for that type of information:
+The following are predefined metadata keys that must be used for that type of information (decoders must accept both regular and short key versions):
 
-| Key   | Type          | Contents          |
-| ----- | ------------- | ----------------- |
-| `_ct` | Timestamp     | Creation time     |
-| `_mt` | Timestamp     | Modification time |
-| `_at` | Timestamp     | Last access time  |
-| `_t`  | List          | Set of tags       |
-| `_a`  | Unordered Map | Attributes        |
+| Key                  | Short Key | Type          | Contents          |
+| -------------------- | --------- | ------------- | ----------------- |
+| `_creation_time`     | `_ct`     | Timestamp     | Creation time     |
+| `_modification_time` | `_mt`     | Timestamp     | Modification time |
+| `_access_time`       | `_at`     | Timestamp     | Last access time  |
+| `_tags`              | `_t`      | List          | Set of tags       |
+| `_attributes`        | `_a`      | Unordered Map | Attributes        |
 
 All other metadata keys beginning with `_` are reserved for future expansion, and must not be used.
 
