@@ -60,7 +60,10 @@ Contents
   - [Unordered Map](#unordered-map)
   - [Ordered Map](#ordered-map)
 * [Metadata Types](#metadata-types)
+  - [Metadata Association](#metadata-association)
   - [Metadata Map](#metadata-map)
+    - [Name Clashes](#name-clashes)
+    - [Predefines Keys](#predefined-keys)
   - [Comment](#comment)
 * [Other Types](#other-types)
   - [Nil](#nil)
@@ -83,6 +86,7 @@ Whitespace is used to separate elements in a container. In maps, the key and val
 #### Example
 
     v1
+    // _ct is the creation time, in this case referring to the document
     (_ct = 2019.9.1-22:14:01)
     {
         // A comment
@@ -99,6 +103,7 @@ Whitespace is used to separate elements in a container. In maps, the key and val
         "hex int"       = 0xfffe0001
         float           = 14.125
         time            = 2019.7.1-18:04:00/Z
+        // nil must be quoted when representing the string "nil"
         "nil"           = nil
         bytes           = h"10 ff 38 9a dd 00 4f 4f 91"
         url             = u"https://example.com/"
@@ -424,7 +429,7 @@ An "array" for the purposes of this spec represents a contiguous sequence of oct
 
 An array of octets. This data type should only be used as a last resort if the other data types cannot represent the data you need. To reduce cross-platform confusion, multibyte data types stored within the binary blob should be represented in little endian order whenever possible.
 
-Byte array data is enclosed in double quotes `"`, and is prefixed by the encoding type. The encoded contents may contain whitespace at any point.
+Byte array data is enclosed in double quotes `"`, and is prefixed by the encoding type. The encoded contents may contain whitespace at any point, but there must be no whitespace between the encoding type and the opening double-quote.
 
 Encoding Types:
 
@@ -604,9 +609,17 @@ A metadata map is an ordered map containing metadata about the object that follo
 
 Metadata map contents are enclosed within parenthesis: `(` and `)`
 
-The following are predefined metadata keys that must be used for that type of information (decoders must accept both regular and short key versions):
+#### Name Clashes
 
-| Key                  | Short Key | Type          | Contents          |
+There are various metadata standards in use today (https://en.wikipedia.org/wiki/Metadata_standard). Care should be taken to ensure that your chosen metadata system doesn't clash with other established naming schemes. In general, international standards tend to use URI style identifiers, so the risk is usually minimal when applying string and numeric keys. However, a little foresight and research goes a long way towards avoiding pain down the line!
+
+#### Predefines Keys
+
+This standard specifies predefined keys for the most common metadata in ad-hoc data structures. Specifying these keys maximizes the chances of disparate systems understanding one other, and avoids a lot of duplication.
+
+The following predefined metadata keys must be used for the specified type of information (decoders must accept both regular and short key versions):
+
+| Regular Key          | Short Key | Type          | Contents          |
 | -------------------- | --------- | ------------- | ----------------- |
 | `_creation_time`     | `_ct`     | Timestamp     | Creation time     |
 | `_modification_time` | `_mt`     | Timestamp     | Modification time |
@@ -621,14 +634,25 @@ Note: Metadata must not be placed before the [version specifier](#version-specif
 #### Example
 
     v1
+    // Metadata for the entire document
+    (
+        _ct = 2017.01.14-15:22:41/Z
+        _mt = 2019.08.17-12:44:31/Z
+        _at = 2019.09.14-09:55:00/Z
+    )
     {
         records = [
-            ( _ct = 2019.05.14-10:22:55/Z )
+            // Metadata for "ABC Corp" record
+            (
+                _ct = 2019.05.14-10:22:55/Z
+                _t = ["longtime client" "big purchases"]
+            )
             {
                 client = "ABC Corp"
                 amount = 10499.28
                 due = 2020.05.14
             }
+            // Metadata for "XYZ Corp" record
             ( _ct = 2019.02.30-09:00:01/Z  _mt = 2019.08.17-12:44:31/Z )
             {
                 client = "XYZ Corp"
