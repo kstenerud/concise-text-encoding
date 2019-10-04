@@ -26,6 +26,7 @@ Example
 -------
 
     v1
+    // _ct is the creation time, in this case referring to the document
     (_ct = 2019.9.1-22:14:01)
     {
         // A comment
@@ -42,6 +43,7 @@ Example
         "hex int"       = 0xfffe0001
         float           = 14.125
         time            = 2019.7.1-18:04:00/Z
+        // nil must be quoted when representing the string "nil"
         "nil"           = nil
         bytes           = h"10 ff 38 9a dd 00 4f 4f 91"
         url             = u"https://example.com/"
@@ -129,7 +131,6 @@ TODO:
 License
 -------
 
-Copyright (c) 2018 Karl Stenerud. All rights reserved.
+Copyright Karl Stenerud. All rights reserved.
 
-Specifications released under Creative Commons Attribution 4.0 International Public License.
-Reference implementation released under MIT License.
+Specifications released under [Creative Commons Attribution 4.0 International Public License](LICENSE.md).
