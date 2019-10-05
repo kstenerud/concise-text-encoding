@@ -288,7 +288,7 @@ Field values must never be abbreviated (the year 19 refers to 19 AD, not 2019).
 
 The year field may be any number of digits, and may be positive (representing AD dates) or negative (representing BC dates). Negative (BC) years are prefixed with a dash character (`-`). The year must always be written in full, and may not be abbreviated.
 
-Note: The Anno Domini system has no zero year (there is no 0 BC or 0 AD), and so the year values `0` and `-0` are invalid. Many date systems internally use the value 0 to represent 1 BC and offset all BC dates by 1 for mathematical continuity, but in interchange formats it's preferable to avoid exposing potentially confusing internal details.
+Note: The Anno Domini system has no zero year (there is no 0 BC or 0 AD), and so the year values `0` and `-0` are invalid. Although many date systems internally use the value 0 to represent 1 BC and offset all BC dates by 1 for mathematical continuity, it's preferable in interchange formats to avoid potential confusion from such tricks.
 
 #### Date Structure
 
