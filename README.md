@@ -22,6 +22,13 @@ Features
 
 
 
+Request for Comments
+--------------------
+
+This prototype specification is now [open to comments from the public](https://github.com/kstenerud/concise-binary-encoding/blob/master/request-for-comments.md). Please join the discussion!
+
+
+
 Example
 -------
 
