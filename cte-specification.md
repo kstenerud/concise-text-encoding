@@ -430,7 +430,7 @@ Byte array data is enclosed in double quotes `"`, and is prefixed by the encodin
 
 Encoding Types:
 
-Supported encoding types are [hex](https://github.com/kstenerud/safe-encoding/blob/master/safe16-specification.md), [safe64](https://github.com/kstenerud/safe-encoding/blob/master/safe64-specification.md), and [safe85](https://github.com/kstenerud/safe-encoding/blob/master/safe85-specification.md). You can choose your encoding type based on your size constraints and desired features.
+Supported encoding types are [hex](https://github.com/kstenerud/safe-encoding/blob/master/safe16-specification.md), [safe64](https://github.com/kstenerud/safe-encoding/blob/master/safe64-specification.md), and [safe85](https://github.com/kstenerud/safe-encoding/blob/master/safe85-specification.md). You can choose the encoding type based on your size constraints and desired features.
 
 | Type   | Prefix | Bloat | Features                                |
 | ------ | ------ | ----- | --------------------------------------- |
@@ -470,31 +470,42 @@ The following escape sequences are allowed inside a string's contents, and must 
 | `\x01` - `\xff`     | one octet, hexadecimal notation |
 | `\u0001` - `\uffff` | unicode character               |
 
-Strings must always resolve to complete, valid unicode characters when fully decoded (after evaluating escape sequences).
+Every instance of the backslash character (`\`) within a string must resolve to a valid escape sequence (see above); otherwise it is invalid.
 
+Strings must always resolve to complete, valid unicode characters and sequences when fully decoded (after evaluating escape sequences).
+
+Characters that cannot be edited in a UTF-8 capable text editor (because, for example, they have no width or visibility) must be represented using escape sequences.
 
 #### Line Breaks and Whitespace
 
-Care should be taken to ensure that CTE documents can be easily edited in a text editor. For this reason, it is preferable to encode line breaking characters and certain whitespace characters (such as TAB) using escape sequences rather than the bare character coding.
+Care should be taken to ensure that CTE documents can be easily edited in a text editor without losing information. For this reason, it is generally preferable to encode line breaking characters and certain whitespace characters (such as TAB) using escape sequences rather than the bare character coding.
 
-Note: While carriage return (u+000d) is technically allowed in strings, line endings should be converted to linefeed (u+0009) whenever possible to maximize compatibiity between systems.
+Note: While carriage return (u+000d) is technically allowed in strings, line endings should be converted to linefeed only (u+0009) whenever possible to maximize compatibiity between systems.
 
 #### Unquoted String
 
 Normally, strings must be enclosed in double-quotes `"`, but this rule may be relaxed if:
 
-* The string does not contain characters from u+0000 to u+007f - except for lowercase a-z, uppercase A-Z, and underscore (`_`).
-* The string does not start with a numeral `[0-9]`.
+* The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, numerals 0-9, underscore (`_`), hyphen (`-`), and period (`.`).
+* The string does not begin with characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
+* The string does not contain unicode characters or sequences that would be mistaken by a human reader for symbol characters in the u+0000 to u+007f range (``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``).
 * The string does not clash with existing CTE keywords such as `nil`, `inf`, `nan`, `snan`, `true`, `false`, `t`, `f`, etc.
 * The string does not contain escape sequences or whitespace or line breaks.
 
-Care must be taken that the string values you use are visible and editable in text editors.
-
 #### Example
 
-    "A string\twith\ttabs\nand\nnewlines"
+Requires quotes:
 
-    a_bare_string
+    "String with spaces"
+    "String\twith\ttabs\nand\nnewlines"
+    "[special-chars]"
+    ".begins_with_a_dot"
+
+Does not require quotes:
+
+    _begins-with-underscore
+    sub-paragraph_1.annex_3
+    飲み物
 
 
 ### URI
@@ -775,7 +786,7 @@ Examples:
 
 ### Whitespace **must** occur:
 
- * Between values in a list: `[12"one-two or twelve?"]` is invalid
+ * Between values in a list: `[12"a string"]` is invalid.
  * Between key-value pairs in a map: `{1="one"2="two"3="three"4="four"}` is invalid.
 
 
