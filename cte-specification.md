@@ -75,8 +75,30 @@ Contents
 Structure
 ---------
 
+A CTE document is a UTF-8 encoded text document containing data arranged in an ad-hoc hierarchical fashion. Users of [JSON](https://en.wikipedia.org/wiki/JSON) will recognize the general structure.
 
-A CTE document is a UTF-8 encoded (with no byte order mark) text document consisting of a version specifier followed by a single, top-level object of any type. To store multiple values in a CTE document, use a container as the top-level object and store other objects within that container.
+The document begins with a version specifier, followed by an object. Multiple objects may be stored in the document by using a container as the top-level object.
+
+    [version specifier] [object]
+
+The following general types are supported:
+
+| Type              | Example                     |
+| ----------------- | --------------------------- |
+| Nil               | `nil`                       |
+| Boolean           | `true`                      |
+| Integer           | `-1_000_000_000_000_000`    |
+| Float             | `4.8255`                    |
+| Time              | `2019.7.1-18:04:00/E/Rome`  |
+| String            | `"A string"`                |
+| URI               | `u"http://example.com?q=1"` |
+| Bytes             | `h"62696e6172792064617461"` |
+| List              | `[1 2 3 4]`                 |
+| Unordered Map     | `{one=1 two=2}`             |
+| Ordered Map       | `<one=1 two=2>`             |
+| Metadata Map      | `(one=1 two=2)`             |
+| Comment           | `// A comment`              |
+| Multiline Comment | `/* A comment */`           |
 
 Whitespace is used to separate elements in a container. In maps, the key and value portions of a key-value pair are separated by an equals character `=` and possible whitespace. The key-value pairs themselves are separated by whitespace.
 
@@ -89,8 +111,8 @@ Whitespace is used to separate elements in a container. In maps, the key and val
         // A comment
         /* A multiline
            comment */
-        (metadata_about_a_list = "something interesting about 'a list'")
-        "a list"        = [1 2 "a string"]
+        (metadata_about_a_list = "something interesting about a_list")
+        a_list          = [1 2 "a string"]
         "unordered map" = {2=two 3=3000 1=one}
         "ordered map"   = <1=one 2.5="two and a half" 3=3000>
         boolean         = true
@@ -108,13 +130,9 @@ Whitespace is used to separate elements in a container. In maps, the key and val
         1               = "Keys don't have to be strings"
     }
 
-The top-level object can also be a simple type, for example:
+The top-level object can also be a non-container type, for example:
 
     v1 "A single string object"
-
-or:
-
-    v1 30.09
 
 
 ### Version Specifier
@@ -137,7 +155,7 @@ Or:
 
 ### Maximum Depth
 
-Since nested objects (in containers such as maps and lists) are possible, it is necessary to impose an arbitrary depth limit to insure interoperability between implementations. For the purposes of this spec, that limit is 1000 levels of nesting from the top level container to the most nested object (inclusive), unless both sending and receiving parties agree to a different max depth.
+Since nested objects (in containers such as maps and lists) are possible, it is necessary to impose an arbitrary depth limit to insure interoperability between implementations. For the purposes of this spec, that limit is 1000 levels of nesting from the top level container to the most nested object (inclusive), unless a different maximum depth is established between parties.
 
 
 ### Maximum Length
@@ -198,9 +216,9 @@ There is no maximum number of significant digits or exponent digits, but care mu
 
 #### Base-16 Exponential Notation
 
-Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion itself is a base-10 number representing the power-of-2 to multiply the significand by. Values must be normalized.
+Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion itself is a base-10 number representing the power-of-2 to multiply the significand by. Values should be normalized unless the source ieee754 value being represented is subnormal.
 
-* `1.3dep42` = 1.3de (base 16) x 2 ^ 42
+* `a.3fb8p42` = a.3fb8 x 2 ^ 42
 
 Base-16 notation should only be used to support legacy systems that can't handle decimal rounded values. Decimal floating point values tend to be smaller, and also avoid the false precision of binary floating point values. [More info](https://github.com/kstenerud/compact-float/blob/master/compact-float-specification.md#how-much-precision-do-you-need)
 
@@ -486,8 +504,7 @@ Note: While carriage return (u+000d) is technically allowed in strings, line end
 
 Normally, strings must be enclosed in double-quotes `"`, but this rule may be relaxed if:
 
-* The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, numerals 0-9, underscore (`_`), hyphen (`-`), and period (`.`).
-* The string does not begin with characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
+* The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
 * The string does not contain unicode characters or sequences that would be mistaken by a human reader for symbol characters in the u+0000 to u+007f range (``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``).
 * The string does not clash with existing CTE keywords such as `nil`, `inf`, `nan`, `snan`, `true`, `false`, `t`, `f`, etc.
 * The string does not contain escape sequences or whitespace or line breaks.
@@ -503,8 +520,9 @@ Requires quotes:
 
 Does not require quotes:
 
-    _begins-with-underscore
-    sub-paragraph_1.annex_3
+    string
+    contains_underscore
+    _begins_with_underscore
     飲み物
 
 
@@ -792,10 +810,10 @@ Examples:
 
 ### Whitespace **must not** occur:
 
- * Between a byte array encoding type and the opening double-quote: `h "` is invalid.
- * Splitting a time value: `2018.07.01-10 :53:22.001481/Z` is invalid.
- * Splitting a numeric value: `3f h`, `9.41 d`, `3 000`, `9.3 e+3`, `- 1.0` are invalid.
- * Splitting special values: `t rue`, `ni l`, `i nf`, `n a n` are invalid.
+ * Between a byte array encoding type and the opening double-quote (`h "` is invalid).
+ * Splitting a time value (`2018.07.01-10 :53:22.001481/Z` is invalid).
+ * Splitting a numeric value (`3f h`, `9.41 d`, `3 000`, `9.3 e+3`, `- 1.0` are invalid).
+ * Splitting special values: (`t rue`, `ni l`, `i nf`, `n a n` are invalid).
 
 
 ### Whitespace is interpreted literally (not ignored) within a string or comment:
@@ -803,7 +821,7 @@ Examples:
     "This string has spaces
     and a newline, which are all preserved."
 
-    // Comment whitepsace      is preserved.
+    //   Comment whitepsace      is preserved.
 
 
 
