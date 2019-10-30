@@ -176,8 +176,6 @@ Numeric Types
 
 Supports the values `true` and `false`.
 
-You may also use the aliases `t` and `f`.
-
 #### Example
 
     true
