@@ -502,9 +502,10 @@ Note: While carriage return (u+000d) is technically allowed in strings, line end
 
 Normally, strings must be enclosed in double-quotes `"`, but this rule may be relaxed if:
 
-* The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
+* The string does not begin with a character from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
+* The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, numerals 0-9, and underscore (`_`).
 * The string does not contain unicode characters or sequences that would be mistaken by a human reader for symbol characters in the u+0000 to u+007f range (``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``).
-* The string does not clash with existing CTE keywords such as `nil`, `inf`, `nan`, `snan`, `true`, `false`, `t`, `f`, etc.
+* The string does not clash with existing CTE keywords (for example `nil`, `inf`, `nan`, `snan`, `true`, `false`, etc).
 * The string does not contain escape sequences or whitespace or line breaks.
 
 #### Example
@@ -514,13 +515,11 @@ Requires quotes:
     "String with spaces"
     "String\twith\ttabs\nand\nnewlines"
     "[special-chars]"
-    ".begins_with_a_dot"
 
 Does not require quotes:
 
-    string
-    contains_underscore
-    _begins_with_underscore
+    string25
+    _contains_underscores
     飲み物
 
 
