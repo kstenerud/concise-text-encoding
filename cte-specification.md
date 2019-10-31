@@ -724,9 +724,7 @@ Comments are user-defined string metadata equivalent to comments in a source cod
 
 Comment contents must contain only complete and valid UTF-8 sequences. Escape sequences in comments are not interpreted (they are passed through verbatim).
 
-Comments can be written in single-line or multi-line form. The single-line form starts with a double slash `//` and ends at a newline. The multi-line form starts with the sequence `/*` and ends with the sequence `*/`. They operate similarly to how comments operate in C-like languages. Nested multiline comments are not allowed.
-
-TODO: Allow nested comments?
+Comments can be written in single-line or multi-line form. The single-line form starts with a double slash `//` and ends at a newline. The multi-line form starts with the sequence `/*` and ends with the sequence `*/`. They operate similarly to how comments operate in C-like languages. Nested multiline comments are allowed.
 
 Note: Comments must not be placed before the [version specifier](#version-specifier).
 
