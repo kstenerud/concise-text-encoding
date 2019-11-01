@@ -7,6 +7,13 @@ CTE is non-cycic and hierarchical like XML and JSON, and supports most common da
 
 
 
+Version
+-------
+
+Version 1 (prerelease)
+
+
+
 Features
 --------
 
@@ -34,8 +41,8 @@ Contents
   - [Boolean](#boolean)
   - [Integer](#integer)
   - [Floating Point](#floating-point)
-    - [Base-10 Exponential Notation](#base-10-exponential-notation)
-    - [Base-16 Exponential Notation](#base-16-exponential-notation)
+    - [Base-10 Notation](#base-10-notation)
+    - [Base-16 Notation](#base-16-notation)
     - [Floating Point Rules](#floating-point-rules)
     - [Infinity and Not a Number](#infinity-and-not-a-number)
   - [Numeric Whitespace](#numeric-whitespace)
@@ -165,9 +172,9 @@ The top-level object can also be a non-container type, for example:
 
 ### Version Specifier
 
-All CTE documents must begin with a version specifier, which must not be preceded by whitespace.
+All CTE documents must begin with a version specifier, which must not be preceded by whitespace. In other words, the very first byte of a CTE document must be `v` (0x76).
 
-The version specifier is the lowercase letter `v` followed immediately by a number representing the version of this specification that the document adheres to (there is no whitespace between the `v` and the number). The version specifier must be followed by whitespace to separate it from the rest of the document.
+The version specifier is the lowercase letter `v` followed immediately by a number representing the version of this specification that the document adheres to (there must not be whitespace between the `v` and the number). The version specifier must be followed by whitespace to separate it from the rest of the document.
 
 #### Examples
 
@@ -193,7 +200,7 @@ Maximum lengths (max list length, max map length, max array length, max total ob
 
 ### Line Endings
 
-Line endings can be encoded as LF only (u+0009) or as CR/LF (u+000d u+0009) to maintain compatibility with editors on various popular platforms. However, for data transmission, the canonical format is LF only. Decoders should accept CR/LF as input, but encoders should only output LF when the destination is not a file.
+Line endings can be encoded as LF only (u+0009) or as CR/LF (u+000d u+0009) to maintain compatibility with editors on various popular platforms. However, for data transmission, the canonical format is LF only. Decoders must accept both LF and CR/LF as input, but encoders should only output LF when the destination is not a file.
 
 
 
@@ -226,25 +233,27 @@ Integers can be specified in base 2, 8, 10, or 16. Bases other than 10 must be p
 
 ### Floating Point
 
-A floating point number is composed of a whole part and a fractional part, separated by a dot `.`, with an optional exponential portion. Negative values are prefixed with a dash `-`. If no exponential portion is present, the floating point value is assumed to be in base-10.
+A floating point number is composed of a whole part and a fractional part, separated by a dot `.`, with an optional exponential portion. Negative values are prefixed with a dash `-`.
 
     1.0
     -98.413
 
-#### Base-10 Exponential Notation
+#### Base-10 Notation
 
-The exponential portion of a base-10 number is denoted by the lowercase character `e`, followed by the signed size of the base-10 exponent. Values must be normalized (only one digit to the left of the decimal point).
+The exponential portion of a base-10 number is denoted by the lowercase character `e`, followed by the signed size of the exponent. The exponent's sign character may be omitted if it's positive. The exponent portion is a base-10 number representing the power-of-10 to multiply the significand by. Values must be normalized (only one digit to the left of the decimal point).
 
 * `6.411e+9` = 6411000000
+* `6.411e9` = 6411000000
 * `6.411e-9` = 0.000000006411
 
 There is no maximum number of significant digits or exponent digits, but care must be taken to ensure that the receiving end will be able to store the value. 64-bit ieee754 floating point values, for example, can store up to 16 significant digits.
 
-#### Base-16 Exponential Notation
+#### Base-16 Notation
 
-Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion itself is a base-10 number representing the power-of-2 to multiply the significand by. Values should be normalized unless the source ieee754 value being represented is subnormal.
+Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion is a base-10 number representing the power-of-2 to multiply the significand by. The exponent's sign character may be omitted if it's positive. Values should be normalized unless the source ieee754 value being represented is subnormal.
 
-* `a.3fb8p42` = a.3fb8 x 2 ^ 42
+* `0xa.3fb8p+42` = a.3fb8 x 2 ^ 42
+* `0x1.0p0` = 1
 
 Base-16 notation should only be used to support legacy systems that can't handle decimal rounded values. Decimal floating point values tend to be smaller, and also avoid the false precision of binary floating point values. [More info](https://github.com/kstenerud/compact-float/blob/master/compact-float-specification.md#how-much-precision-do-you-need)
 
@@ -278,8 +287,8 @@ Base-16 notation should only be used to support legacy systems that can't handle
 | `508.44e+10` | `5.0844e+12` |
 | `-1000e+5`   | `-1.0e+8`    |
 | `65.0e-20`   | `6.5e-21`    |
-| `0.5e+10`    | `5.0e+11`    |
-
+| `0.5e10`     | `5.0e9`      |
+| `0x1f.33p+1` | `0x1.f33p+5` |
 
 #### Infinity and Not a Number
 
@@ -303,6 +312,7 @@ Rules:
 | Value       | Valid Whitespace     | Invalid Whitespace | Notes                                         |
 | ----------- | -------------------- | ------------------ | --------------------------------------------- |
 | `1000000`   | `1_000_000`          | `_1_000_000`       | `_1_000_000` would be interpreted as a string |
+| `1000000`   | `1_000_000`          | `1_000_000_`       | `1_000_000_` would cause a decoding error     |
 | `-7.4e+100` | `-7_._4__e_+___100`  | `-_7.4e+100`       |                                               |
 | `nan`       | `nan`                | `n_an`             | `n_an` would be interpreted as a string       |
 | `-inf`      | `-inf`               | `-inf_`            |                                               |
@@ -329,7 +339,7 @@ Field values must never be abbreviated (the year 19 refers to 19 AD, not 2019).
 
 The year field can be any number of digits, and can be positive (representing AD dates) or negative (representing BC dates). Negative (BC) years are prefixed with a dash character (`-`). The year must always be written in full, and must not be abbreviated.
 
-Note: The Anno Domini system has no zero year (there is no 0 BC or 0 AD), and so the year values `0` and `-0` are invalid. Many date systems internally use the value 0 to represent 1 BC and offset all BC dates by 1 for mathematical continuity, but in interchange formats it's preferable to avoid exposing potentially confusing internal details.
+Note: The Anno Domini system has no zero year (there is no 0 BC or 0 AD), and so the year values `0` and `-0` are invalid. Many date systems internally use the value 0 to represent 1 BC and offset all BC dates by 1 for mathematical continuity, but in interchange formats it's better to avoid exposing potentially confusing internal details.
 
 #### Date Structure
 
@@ -342,7 +352,7 @@ Dates prior to the introduction of the Gregorian calendar in 1582 must be writte
 
 ### Time Zones
 
-A time zone refers to the political designation of a location having a specific time offset from UTC during a particular time period. Time zones are in a constant state of flux, and can change at any time for many reasons. There are two ways to denote a time zone: by area/location, and by global coordinates.
+A time zone refers to the political designation of a location having a specific time offset from UTC during a particular time period. Time zones are in a constant state of flux, and can change at any time for all sorts of reasons. There are two ways to denote a time zone: by area/location, and by global coordinates.
 
 If the time zone is unspecified, it is assumed to be `Zero` (UTC).
 
@@ -388,7 +398,7 @@ The following special "areas" can also be used. They do not contain a location c
 
 #### Global Coordinates
 
-The global coordinates method uses the global position to hundredths of degrees, giving a resolution of around 1km at the equator. Locations are written as longitude and latitude, separated by a slash character (`/`). Negative values are prefixed with a dash character (`-`), and the period character (`.`) is used as a decimal separator.
+The global coordinates method uses the global position to hundredths of degrees, giving a resolution of about 1km at the equator. Locations are written as longitude and latitude, separated by a slash character (`/`). Negative values are prefixed with a dash character (`-`), and the period character (`.`) is used as a decimal separator.
 
 This method has the advantage of being unambiguous, which can be useful for areas that are in an inconsistent political state at a particular time. The disadvantage is that it's not easily decodable by humans.
 
@@ -470,7 +480,7 @@ All arrays begin with an encoding type (with the exception of string), followed 
 
 ### String
 
-An array of UTF-8 encoded bytes, without a byte order mark (BOM). Strings must not contain NUL (u+0000) or escape sequences that evaluate to NUL.
+An array of UTF-8 encoded bytes. Strings must not contain BOM (u+feff), NUL (u+0000), or escape sequences that evaluate to those.
 
 Strings are not prefixed with an encoding type; they are simply enclosed within double-quotes. Literal double quotes (`"`) and backslashes (`\`) within the string must be escaped.
 
@@ -518,12 +528,15 @@ Does not require quotes:
 
     string25
     _contains_underscores
+    _150
     飲み物
 
 
 ### URI
 
-Uniform Resource Identifier, structured in accordance with [RFC 3986](https://tools.ietf.org/html/rfc3986). URIs have the encoding type `u`.
+Uniform Resource Identifier, structured in accordance with [RFC 3986](https://tools.ietf.org/html/rfc3986). Instances of the double-quote character(`"`), control characters, whitespace characters, line break characters, and any characters not editable in a utf-8 capable editor must be percent-encoded.
+
+URIs have the encoding type `u`.
 
 Note: Percent-encoding sequences within URIs are NOT interpreted; they are passed through as-is.
 
@@ -594,7 +607,7 @@ All keys in a map must resolve to a unique value, even across data types. For ex
  * `2000`
  * `2000.0`
 
-Map entries are split into key-value pairs using the equals `=` character and optional whitespace. Key-value pairs are separated from each other using whitespace. A key without a paired value is invalid.
+Map entries are split into key-value pairs using the equals `=` character and optional whitespace. Key-value pairs must be separated from each other using whitespace. A key without a paired value is invalid.
 
 An unordered map begins with an opening curly brace `{`, whitespace separated key-value pairs, and finally a closing brace `}`.
 
@@ -618,9 +631,9 @@ Ordered maps use angle brackets `<` and `>` instead of curly braces `{` and `}`.
 #### Example
 
     <
-        first = "This is the first item"
-        new_second = "This is the second item"
-        old_second = "This used to be the second item"
+        first_item           = "This is the first item"
+        second_item          = "This is the second item"
+        previous_second_item = "This used to be the second item"
     >
 
 
@@ -628,7 +641,7 @@ Ordered maps use angle brackets `<` and `>` instead of curly braces `{` and `}`.
 Metadata Types
 --------------
 
-Metadata is data about the data. It describes things about whatever data follows it in a document, which might or might not necessarily be of interest to a consumer of the data. For this reason, decoders are free to ignore and discard metadata if they so choose. Senders and receivers should negotiate beforehand how to react to metadata.
+Metadata is data about the data. It describes whatever data follows it in a document, which might or might not necessarily be of interest to a consumer of the data. For this reason, decoders are free to ignore and discard metadata if they so choose. Senders and receivers should negotiate beforehand how to react to metadata.
 
 
 ### Metadata Association
@@ -641,7 +654,7 @@ In this case, the metadata refers to the value `"a value"`, but the actual data 
 
     { "a key" = (some_metadata=500) }
 
-This map is invalid, because it resolves to `{"a key"}`, with no value associated with the key (the metadata doesn't count).
+This map is invalid, because it resolves to `{"a key"}`, where no value is associated with the key (the metadata doesn't count).
 
 Metadata can also refer to other metadata, for example:
 
@@ -651,7 +664,7 @@ In this case, `metadata_outer` refers to `metadata_inner`, and `metadata_inner` 
 
 #### Exception: Comments
 
-The metadata association rules do not apply to [comments](#comment). Comments stand entirely on their own, and do not officially refer to anything, nor can any other metadata refer to a comment (i.e. comments are invisible to other metadata).
+The metadata association rules do not apply to [comments](#comment). Comments stand entirely on their own, and do not officially refer to anything, nor can any other metadata refer to a comment (i.e. comments are invisible to other metadata). This is to keep their usage consistent with how comments are used in existing languages.
 
     { (metadata_outer=1) (metadata_inner=1) /* a comment */ "a key" = "a value" }
 
@@ -662,7 +675,7 @@ In this case, `metadata_inner` still refers to `"a key"`, not `a comment`, and `
 
 A metadata map is an **ordered map** containing metadata about the object that follows the map. A metadata map can contain anything that an ordered map can, but all string keys that begin with an underscore (`_`) are reserved, and must not be used except in the ways defined by this specification.
 
-Metadata map contents are enclosed within parenthesis: `(` and `)`
+Metadata map contents are enclosed within parentheses: `(` and `)`
 
 #### Name Clashes
 
@@ -720,11 +733,11 @@ Note: Metadata must not be placed before the [version specifier](#version-specif
 
 ### Comment
 
-Comments are user-defined string metadata equivalent to comments in a source code document. Comments do not officially refer to other objects, although conventionally they tend to refer to what follows in the document, be it a single object, a series of objects, a distant object, or they might even be entirely standalone. This is similar to how source code comments are used.
+Comments are user-defined string metadata equivalent to comments in a source code document. Comments do not officially refer to other objects, although conventionally they tend to refer to what follows in the document, be it a single object, a series of objects, a distant object, or they might even be entirely standalone. This is similar to how source code comments are used in most programming languages.
 
 Comment contents must contain only complete and valid UTF-8 sequences. Escape sequences in comments are not interpreted (they are passed through verbatim).
 
-Comments can be written in single-line or multi-line form. The single-line form starts with a double slash `//` and ends at a newline. The multi-line form starts with the sequence `/*` and ends with the sequence `*/`. They operate similarly to how comments operate in C-like languages. Nested multiline comments are allowed.
+Comments can be written in single-line or multi-line form. The single-line form starts with a double slash `//` and ends at a newline. The multi-line form starts with the sequence `/*` and ends with the sequence `*/`. They operate similarly to how comments operate in C-like languages, except that nested multiline comments are allowed.
 
 Note: Comments must not be placed before the [version specifier](#version-specifier).
 
@@ -793,16 +806,16 @@ A CTE document must be entirely in lower case, with the following exceptions:
 
  * String and comment contents: `"A string can contain UPPER CASE. Escape sequences must be lower case: \x3d"`
  * [Time zones](#time-zones) are case sensitive, and contain uppercase characters.
- * Safe85 and Safe64 encodings make use of uppercase characters in their code tables.
+ * Binary and URI array contents can contain uppercase characters where allowed by their respective specifications.
 
-Everything else, including hexadecimal digits, exponents and escape sequences, must be lower case.
+Everything else, including hexadecimal digits, exponents, and escape sequences, must be lower case.
 
 
 
 Whitespace
 ----------
 
-Whitespace characters outside of strings and comments are ignored by a CTE parser. Any number of whitespace characters can occur in a sequence.
+Whitespace characters outside of strings and comments must be ignored by a CTE parser. Any number of whitespace characters can occur in a sequence.
 
 
 ### Valid Whitespace Characters
@@ -842,7 +855,7 @@ Examples:
  * Before the [version specifier](#version-specifier).
  * Between an array encoding type and the opening double-quote (`h "` is invalid).
  * Splitting a time value (`2018.07.01-10 :53:22.001481/Z` is invalid).
- * Splitting a numeric value (`3f h`, `9.41 d`, `3 000`, `9.3 e+3`, `- 1.0` are invalid).
+ * Splitting a numeric value (`3f h`, `9. 41`, `3 000`, `9.3 e+3`, `- 1.0` are invalid).
  * Splitting special values: (`t rue`, `ni l`, `i nf`, `n a n` are invalid).
 
 
@@ -861,16 +874,13 @@ Invalid Encodings
 Invalid encodings must not be used, as they will likely cause problems or even API violations in certain languages. A parser must halt processing when invalid data is detected.
 
  * A CTE document must not contain the NUL (u+000) character, the BOM (u+feff) character, or any invalid characters.
- * All UTF-8 sequences must be complete (no partial characters, unpaired surrogates, etc).
- * Numeric values must be representable in their respective binary formats (integer, binary float, decimal float).
+ * All UTF-8 sequences must be complete and valid (no partial characters, unpaired surrogates, etc).
  * Times must be valid. For example: 2000.2.30, while technically encodable, is not allowed.
  * Containers must be properly terminated. Extra container endings (`}`, `]`, etc) are invalid.
  * All map keys must have corresponding values. A key with a missing value is invalid.
  * Map keys must not be container types, the `nil` type, or values the resolve to NaN (not-a-number).
  * Maps must not contain duplicate keys. This includes numeric keys of different types that resolve to the same value.
- * All UTF-8 sequences must evaluate to complete, valid characters.
- * Metadata keys beginning with `_` must not be used, except for those listed in this specifiction.
- * Nested multiline comments are not allowed.
+ * Metadata map keys beginning with `_` must not be used, except for those listed in this specifiction.
  * Upper case text is not allowed, except as described in section [Letter Case](#letter-case).
  * Whitespace must only occur as described in section [Whitespace](#whitespace).
 
@@ -879,7 +889,7 @@ Invalid encodings must not be used, as they will likely cause problems or even A
 Version History
 ---------------
 
-July 22, 2018: Preview Version 1
+July 22, 2018: First draft
 
 
 
