@@ -97,7 +97,7 @@ The following types are natively supported, and have full type compatibility wit
 | Boolean           | `true`                      |
 | Integer           | `-1_000_000_000_000_000`    |
 | Float             | `4.8255`                    |
-| Time              | `2019.7.1-18:04:00/E/Rome`  |
+| Time              | `2019-7-15/18:04:00/E/Rome` |
 | String            | `"A string"`                |
 | URI               | `u"http://example.com?q=1"` |
 | Bytes             | `h"62696e6172792064617461"` |
@@ -155,11 +155,14 @@ Whitespace is used to separate elements in a container. In maps, the key and val
         "octal int"     = 0o644
         "regular int"   = -10000000
         "hex int"       = 0xfffe0001
-        float           = 14.125
-        time            = 2019.7.1-18:04:00/Z
+        "decimal float" = -14.125
+        "hex float"     = 0x5.1ec4p20
+        date            = 2019.7.1
+        time            = 18:04:00.940231541/E/Prague
+        timestamp       = 2010-7-15/13:28:15.415942344/Z
         // nil must be quoted when representing the string "nil"
         "nil"           = nil
-        bytes           = h"10 ff 38 9a dd 00 4f 4f 91"
+        bytes           = h"10ff389add004f4f91"
         url             = u"https://example.com/"
         email           = u"mailto:me@somewhere.com"
         1               = "Keys don't have to be strings"
@@ -412,7 +415,7 @@ This method has the advantage of being unambiguous, which can be useful for area
 
 Refers to a particular date without specifying a time during that day.
 
-A date is made up of the following fields, separated by a period character (`.`):
+A date is made up of the following fields, separated by a dash character (`-`):
 
 | Field | Mandatory | Min Value | Max Value | Max Digits |
 | ----- | --------- | --------- | --------- | ---------- |
@@ -422,9 +425,9 @@ A date is made up of the following fields, separated by a period character (`.`)
 
 #### Examples
 
-* `2019.8.5`: August 5, 2019
-* `5081.03.30`: March 30, 5081
-* `-300.12.21`: December 21, 300 BC (proleptic Gregorian)
+* `2019-8-5`: August 5, 2019
+* `5081-03-30`: March 30, 5081
+* `-300-12-21`: December 21, 300 BC (proleptic Gregorian)
 
 
 
@@ -461,12 +464,13 @@ A time is made up of the following fields:
 
 ### Timestamp
 
-A timestamp combines a date and a time, separated by a dash character (`-`).
+A timestamp combines a date and a time, separated by a slash character (`/`).
 
 #### Examples
 
-* `2019.01.23-14:08:51.941245`: January 23, 2019, at 14:08:51 and 941245 microseconds, UTC
-* `5192.11.01-03:00:00/48.86/2.36`: November 1st, 5192, at 3:00:00, at whatever is in the place of Paris at that time.
+* `2019-01-23/14:08:51.941245`: January 23, 2019, at 14:08:51 and 941245 microseconds, UTC
+* `1985-10-26/01:20:01.105/M/Los_Angeles`: October 26, 1985, at 1:20:01 and 105 milliseconds, Los Angeles time
+* `5192-11-01/03:00:00/48.86/2.36`: November 1st, 5192, at 3:00:00, at whatever is in the place of Paris at that time
 
 
 
