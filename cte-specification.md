@@ -67,6 +67,7 @@ Contents
   - [Comment](#comment)
 * [Other Types](#other-types)
   - [Nil](#nil)
+* [Named Values](#named-values)
 * [Letter Case](#letter-case)
 * [Whitespace](#whitespace)
 * [Invalid Encodings](#invalid-encodings)
@@ -93,8 +94,8 @@ The following types are natively supported, and have full type compatibility wit
 
 | Type              | Example                     |
 | ----------------- | --------------------------- |
-| Nil               | `nil`                       |
-| Boolean           | `true`                      |
+| Nil               | `@nil`                      |
+| Boolean           | `@true`                     |
 | Integer           | `-1_000_000_000_000_000`    |
 | Float             | `4.8255`                    |
 | Time              | `2019-7-15/18:04:00/E/Rome` |
@@ -150,7 +151,7 @@ Whitespace is used to separate elements in a container. In maps, the key and val
         a_list          = [1 2 "a string"]
         "unordered map" = {2=two 3=3000 1=one}
         "ordered map"   = <1=one 2.5="two and a half" 3=3000>
-        boolean         = true
+        boolean         = @true
         "binary int"    = -0b10001011
         "octal int"     = 0o644
         "regular int"   = -10000000
@@ -160,8 +161,7 @@ Whitespace is used to separate elements in a container. In maps, the key and val
         date            = 2019.7.1
         time            = 18:04:00.940231541/E/Prague
         timestamp       = 2010-7-15/13:28:15.415942344/Z
-        // nil must be quoted when representing the string "nil"
-        "nil"           = nil
+        nil             = @nil
         bytes           = h"10ff389add004f4f91"
         url             = u"https://example.com/"
         email           = u"mailto:me@somewhere.com"
@@ -212,12 +212,12 @@ Numeric Types
 
 ### Boolean
 
-Supports the values `true` and `false`.
+Supports the values `@true` and `@false`.
 
 #### Example
 
-    true
-    false
+    @true
+    @false
 
 
 ### Integer
@@ -297,10 +297,10 @@ Base-16 notation should only be used to support legacy systems that can't handle
 
 The following are special floating point values:
 
- * `inf`: Infinity
- * `-inf`: Negative Infinity
- * `nan`: Not a Number (quiet)
- * `snan`: Not a Number (signaling)
+ * `@inf`: Infinity
+ * `-@inf`: Negative Infinity
+ * `@nan`: Not a Number (quiet)
+ * `@snan`: Not a Number (signaling)
 
 
 ### Numeric Whitespace
@@ -310,15 +310,15 @@ The `_` character can be used as "numeric whitespace" when encoding numeric valu
 Rules:
 
 * Numeric values of any type can contain any amount of whitespace at any point after the first digit and before the last digit.
-* Special named values `nan`, `snan`, and `inf` must not contain whitespace.
+* Special named values `@nan`, `@snan`, and `@inf` must not contain whitespace.
 
 | Value       | Valid Whitespace     | Invalid Whitespace | Notes                                         |
 | ----------- | -------------------- | ------------------ | --------------------------------------------- |
 | `1000000`   | `1_000_000`          | `_1_000_000`       | `_1_000_000` would be interpreted as a string |
 | `1000000`   | `1_000_000`          | `1_000_000_`       | `1_000_000_` would cause a decoding error     |
 | `-7.4e+100` | `-7_._4__e_+___100`  | `-_7.4e+100`       |                                               |
-| `nan`       | `nan`                | `n_an`             | `n_an` would be interpreted as a string       |
-| `-inf`      | `-inf`               | `-inf_`            |                                               |
+| `@nan`      | `@nan`               | `@n_an`            |                                               |
+| `-@inf`     | `-@inf`              | `-@_inf`           |                                               |
 
 Numeric whitespace characters must be ignored when decoding numeric values.
 
@@ -517,7 +517,6 @@ Normally, strings must be enclosed within double-quotes (`"`), but this rule can
 * The string does not begin with a character from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
 * The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, numerals 0-9, and underscore (`_`).
 * The string does not contain unicode characters or sequences that would be mistaken by a human reader for symbol characters in the u+0000 to u+007f range (``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``).
-* The string does not clash with existing CTE keywords (for example `nil`, `inf`, `nan`, `snan`, `true`, `false`, etc).
 * The string does not contain escape sequences or whitespace or line breaks.
 
 #### Example
@@ -599,12 +598,12 @@ Note: While this spec allows mixed types in lists, not all languages do. Use mix
 
 #### Example
 
-    [1 two 3.1 {} nil]
+    [1 two 3.1 {} @nil]
 
 
 ### Unordered Map
 
-A unordered map associates objects (keys) with other objects (values), storing the key-value pairs in no particular order. Implementations must not rely on any incidental ordering. Keys can be any mix of scalar or array types. A key must not be a container type, the `nil` type, or any value that evaluates to NaN (not-a-number). Values can be any mix of any type, including other containers.
+A unordered map associates objects (keys) with other objects (values), storing the key-value pairs in no particular order. Implementations must not rely on any incidental ordering. Keys can be any mix of scalar or array types. A key must not be a container type, the `@nil` type, or any value that evaluates to NaN (not-a-number). Values can be any mix of any type, including other containers.
 
 All keys in a map must resolve to a unique value, even across data types. For example, the following keys would clash:
 
@@ -799,7 +798,25 @@ Note: Use nil judiciously and sparingly, as some languages might have restrictio
 
 #### Example
 
-    nil
+    @nil
+
+
+
+Named Values
+------------
+
+Certain values cannot be expressed other than by their names. These named values are always preceded by an at (`@`) character:
+
+| Value    | Meaning                  |
+| -------- | ------------------------ |
+| `@nil`   | No data                  |
+| `@nan`   | Not a number (quiet)     |
+| `@snan`  | Not a number (signaling) |
+| `@inf`   | Infinity (signed value)  |
+| `@true`  | Boolean true             |
+| `@false` | Boolean false            |
+
+Note: There must be no whitespace between the `@` character and the name.
 
 
 
@@ -860,7 +877,7 @@ Examples:
  * Between an array encoding type and the opening double-quote (`h "` is invalid).
  * Splitting a time value (`2018.07.01-10 :53:22.001481/Z` is invalid).
  * Splitting a numeric value (`3f h`, `9. 41`, `3 000`, `9.3 e+3`, `- 1.0` are invalid).
- * Splitting special values: (`t rue`, `ni l`, `i nf`, `n a n` are invalid).
+ * Splitting special values: (`@t rue`, `@ nil`, `@i nf`, `@n a n` are invalid).
 
 
 ### Whitespace is interpreted literally (not ignored) within a string or comment:
@@ -882,7 +899,7 @@ Invalid encodings must not be used, as they will likely cause problems or even A
  * Times must be valid. For example: 2000.2.30, while technically encodable, is not allowed.
  * Containers must be properly terminated. Extra container endings (`}`, `]`, etc) are invalid.
  * All map keys must have corresponding values. A key with a missing value is invalid.
- * Map keys must not be container types, the `nil` type, or values the resolve to NaN (not-a-number).
+ * Map keys must not be container types, the `@nil` type, or values the resolve to NaN (not-a-number).
  * Maps must not contain duplicate keys. This includes numeric keys of different types that resolve to the same value.
  * Metadata map keys beginning with `_` must not be used, except for those listed in this specifiction.
  * Upper case text is not allowed, except as described in section [Letter Case](#letter-case).
