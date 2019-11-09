@@ -230,10 +230,10 @@ Integers can be specified in base 2, 8, 10, or 16. Bases other than 10 must be p
 
 | Base | Name        | Digits           | Prefix | Example      | Decimal Equivalent |
 | ---- | ----------- | ---------------- | ------ | ------------ | ------------------ |
-|   2  | Binary      | 01               | 0b     | `-0b1100`    | -12                |
-|   8  | Octal       | 01234567         | 0o     | `0o755`      | 493                |
+|   2  | Binary      | 01               | `0b`   | `-0b1100`    | -12                |
+|   8  | Octal       | 01234567         | `0o`   | `0o755`      | 493                |
 |  10  | Decimal     | 0123456789       |        | `900000`     | 900000             |
-|  16  | Hexadecimal | 0123456789abcdef | 0h     | `0xdeadbeef` | 3735928559         |
+|  16  | Hexadecimal | 0123456789abcdef | `0h`   | `0xdeadbeef` | 3735928559         |
 
 
 ### Floating Point
@@ -245,17 +245,17 @@ A floating point number is composed of a whole part and a fractional part, separ
 
 #### Base-10 Notation
 
-The exponential portion of a base-10 number is denoted by the lowercase character `e`, followed by the signed size of the exponent. The exponent's sign character may be omitted if it's positive. The exponent portion is a base-10 number representing the power-of-10 to multiply the significand by. Values must be normalized (only one digit to the left of the decimal point).
+The exponential portion of a base-10 number is denoted by the lowercase character `e`, followed by the signed size of the exponent (using `+` for positive and `-` for negative). The exponent's sign character may be omitted if it's positive. The exponent portion is a signed base-10 number representing the power-of-10 to multiply the significand by. Values must be normalized (only one digit to the left of the decimal point).
 
 * `6.411e+9` = 6411000000
 * `6.411e9` = 6411000000
 * `6.411e-9` = 0.000000006411
 
-There is no maximum number of significant digits or exponent digits, but care must be taken to ensure that the receiving end will be able to store the value. 64-bit ieee754 floating point values, for example, can store up to 16 significant digits.
+There is no maximum number of significant digits or exponent digits, but care should be taken to ensure that the receiving end will be able to store the value. 64-bit ieee754 floating point values, for example, can store up to 16 significant digits.
 
 #### Base-16 Notation
 
-Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion is a base-10 number representing the power-of-2 to multiply the significand by. The exponent's sign character may be omitted if it's positive. Values should be normalized unless the source ieee754 value being represented is subnormal.
+Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion is a signed base-10 number representing the power-of-2 to multiply the significand by. The exponent's sign character may be omitted if it's positive. Values should be normalized unless the source ieee754 value being represented is subnormal.
 
 * `0xa.3fb8p+42` = a.3fb8 x 2 ^ 42
 * `0x1.0p0` = 1
@@ -279,7 +279,7 @@ Base-16 notation should only be used to support legacy systems that can't handle
 
 | Invalid      | Valid     | Notes                                                |
 | ------------ | --------- | ---------------------------------------------------- |
-| `-1.`        | `-1.0`    | Or use integer value -1                              |
+| `-1.`        | `-1.0`    | Or use integer value `-1`                            |
 | `.1`         | `0.1`     |                                                      |
 | `.218901e+2` | `21.8901` | Or `2.18901e+1`                                      |
 | `-0`         | `-0.0`    | Special case: -0 cannot be represented as an integer |
@@ -320,7 +320,7 @@ Rules:
 | `1000000`   | `1_000_000`          | `1_000_000_`       | `1_000_000_` would cause a decoding error     |
 | `-7.4e+100` | `-7_._4__e_+___100`  | `-_7.4e+100`       |                                               |
 | `@nan`      | `@nan`               | `@n_an`            |                                               |
-| `-@inf`     | `-@inf`              | `-@_inf`           |                                               |
+| `-@inf`     | `-@inf`              | `-_@inf`           |                                               |
 
 Numeric whitespace characters must be ignored when decoding numeric values.
 
@@ -344,7 +344,7 @@ Field values must never be abbreviated (the year 19 refers to 19 AD, not 2019).
 
 The year field can be any number of digits, and can be positive (representing AD dates) or negative (representing BC dates). Negative (BC) years are prefixed with a dash character (`-`). The year must always be written in full, and must not be abbreviated.
 
-Note: The Anno Domini system has no zero year (there is no 0 BC or 0 AD), and so the year values `0` and `-0` are invalid. Many date systems internally use the value 0 to represent 1 BC and offset all BC dates by 1 for mathematical continuity, but in interchange formats it's better to avoid exposing potentially confusing internal details.
+Note: The Anno Domini system has no zero year (there is no 0 BC or 0 AD), and so the year values `0` and `-0` are invalid. Many date systems internally use the value 0 to represent 1 BC and offset all BC dates by 1 for mathematical continuity, but in interchange formats it's better to avoid exposing potentially confusing internal details, and so the year value 0 is invalid.
 
 #### Date Structure
 
@@ -386,7 +386,7 @@ Since there are only a limited number of areas in the database, the following ab
 
 ##### Special Areas
 
-The following special "areas" can also be used. They do not contain a location component.
+The following special psuedo-areas can also be used. They do not contain a location component.
 
 | Area    | Abbreviation | Meaning            |
 | ------- | ------------ | ------------------ |
@@ -441,7 +441,7 @@ A time is made up of the following fields:
 
 | Field        | Mandatory | Separator | Min Value | Max Value | Max Digits |
 | ------------ | --------- | --------- | --------- | --------- | ---------- |
-| Hour         |     Y     |           |         0 |        24 |          2 |
+| Hour         |     Y     |           |         0 |        23 |          2 |
 | Minute       |     Y     |    `:`    |         0 |        59 |          2 |
 | Second       |     Y     |    `:`    |         0 |        60 |          2 |
 | Subseconds   |     N     |    `.`    |         0 | 999999999 |          9 |
@@ -519,7 +519,7 @@ Normally, strings must be enclosed within double-quotes (`"`), but this rule can
 * The string does not begin with a character from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
 * The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, numerals 0-9, and underscore (`_`).
 * The string does not contain unicode characters or sequences that would be mistaken by a human reader for symbol characters in the u+0000 to u+007f range (``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``).
-* The string does not contain escape sequences or whitespace or line breaks.
+* The string does not contain escape sequences or whitespace or line breaks or unprintable characters.
 
 #### Example
 
@@ -543,7 +543,7 @@ Uniform Resource Identifier, structured in accordance with [RFC 3986](https://to
 
 URIs have the encoding type `u`.
 
-Note: Percent-encoding sequences within URIs are NOT interpreted; they are passed through as-is.
+Note: Percent-encoding sequences within URIs must not be interpreted; they must be passed through as-is.
 
 #### Examples
 
@@ -560,7 +560,7 @@ Note: Percent-encoding sequences within URIs are NOT interpreted; they are passe
 
 An array of octets. This data type should only be used as a last resort if the other data types cannot represent the data you need. To maximize cross-platform compatibility, multibyte data types stored within a binary blob should be represented in little endian byte order whenever possible.
 
-The encoded contents can contain whitespace (CR, LF, TAB, SPACE) at any point.
+The encoded contents can contain whitespace (CR, LF, TAB, SPACE) at any point. Implementations must use whitespace to keep line lengths reasonable (assume that humans will be reading and editing the document).
 
 The supported encoding types are:
 
@@ -772,7 +772,7 @@ The following characters are explicitly allowed:
 
  * Horizontal Tab (u+0009)
  * Linefeed (u+000a)
- * Carriage Return (u+000d)
+ * Carriage Return (u+000d) - this character is ignored and discarded
 
 The following characters are disallowed if they aren't in the above allowed section:
 
@@ -794,8 +794,10 @@ The following characters are allowed if they aren't in the above disallowed sect
         // And another comment.
         "name" = "Joe Average" // Comment after the "Joe Average" object.
         "email" = // Comment after the "email" key.
-        /* Multiline comment with nested single line comment inside
-        u"mailto:joe@average.org" // Comment after email
+        /* Multiline comment with nested comment inside
+          u"mailto:joe@average.org"
+          /* Unlike in C, nested multiline
+             comments are allowed */
         */
         u"mailto:someone@somewhere.com"
         "data" // Comment after data
@@ -827,7 +829,7 @@ Note: Use nil judiciously and sparingly, as some languages might have restrictio
 Named Values
 ------------
 
-Certain values cannot be expressed other than by their names. These named values are always preceded by an at (`@`) character:
+Certain values cannot be expressed other than by their names. These named values are prefixed with an at (`@`) character:
 
 | Value    | Meaning                  |
 | -------- | ------------------------ |
@@ -838,7 +840,7 @@ Certain values cannot be expressed other than by their names. These named values
 | `@true`  | Boolean true             |
 | `@false` | Boolean false            |
 
-Note: There must be no whitespace between the `@` character and the name.
+Note: Named values must not be broken by whitespace.
 
 
 
@@ -849,7 +851,7 @@ A CTE document must be entirely in lower case, with the following exceptions:
 
  * String and comment contents: `"A string can contain UPPER CASE. Escape sequences must be lower case: \x3d"`
  * [Time zones](#time-zones) are case sensitive, and contain uppercase characters.
- * Binary and URI array contents can contain uppercase characters where allowed by their respective specifications.
+ * Binary and URI array contents can contain uppercase characters where allowed by their respective encoding specifications.
 
 Everything else, including hexadecimal digits, exponents, and escape sequences, must be lower case.
 
@@ -898,8 +900,8 @@ Examples:
  * Before the [version specifier](#version-specifier).
  * Between an array encoding type and the opening double-quote (`h "` is invalid).
  * Splitting a time value (`2018.07.01-10 :53:22.001481/Z` is invalid).
- * Splitting a numeric value (`3f h`, `9. 41`, `3 000`, `9.3 e+3`, `- 1.0` are invalid).
- * Splitting special values: (`@t rue`, `@ nil`, `@i nf`, `@n a n` are invalid).
+ * Splitting a numeric value (`3f h`, `9. 41`, `3 000`, `9.3 e+3`, `- 1.0` are invalid). Use the numeric whitespace character (`_`) instead.
+ * Splitting named values: (`@t rue`, `@ nil`, `@i nf`, `@n a n` are invalid).
 
 
 ### Whitespace is interpreted literally (not ignored) within a string or comment:
@@ -918,7 +920,7 @@ Invalid encodings must not be used, as they will likely cause problems or even A
 
  * A CTE document must not contain the NUL (u+000) character, the BOM (u+feff) character, or any invalid characters.
  * All UTF-8 sequences must be complete and valid (no partial characters, unpaired surrogates, etc).
- * Times must be valid. For example: 2000.2.30, while technically encodable, is not allowed.
+ * Times must be valid. For example: `2000-2-30`, while technically encodable, is not allowed.
  * Containers must be properly terminated. Extra container endings (`}`, `]`, etc) are invalid.
  * All map keys must have corresponding values. A key with a missing value is invalid.
  * Map keys must not be container types, the `@nil` type, or values the resolve to NaN (not-a-number).
