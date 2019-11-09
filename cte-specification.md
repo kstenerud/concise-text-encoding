@@ -772,8 +772,8 @@ Note: Comments must not be placed before the [version specifier](#version-specif
 The following characters are explicitly allowed:
 
  * Horizontal Tab (u+0009)
- * Linefeed (u+000a)
- * Carriage Return (u+000d) - this character is ignored and discarded
+ * Linefeed (u+000a) - discarded in single line comments
+ * Carriage Return (u+000d) - always ignored and discarded
 
 The following characters are disallowed if they aren't in the above allowed section:
 
