@@ -561,7 +561,7 @@ Note: Percent-encoding sequences within URIs must not be interpreted; they must 
 
 An array of octets. This data type should only be used as a last resort if the other data types cannot represent the data you need. To maximize cross-platform compatibility, multibyte data types stored within a binary blob should be represented in little endian byte order whenever possible.
 
-The encoded contents can contain whitespace (CR, LF, TAB, SPACE) at any point. Implementations must use whitespace to keep line lengths reasonable (assume that humans will be reading and editing the document).
+The encoded contents can contain whitespace (CR, LF, TAB, SPACE) at any point. Implementations should use whitespace to keep line lengths reasonable (assume that humans will be reading and editing the document).
 
 The supported encoding types are:
 
