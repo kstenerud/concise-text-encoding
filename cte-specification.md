@@ -1,9 +1,11 @@
 Concise Text Encoding
 =====================
 
-Concise Text Encoding (CTE) is a general purpose, human readable, compact representation of semi-structured hierarchical data.
+Concise Text Encoding (CTE) is a general purpose, human friendly, compact representation of semi-structured hierarchical data.
 
 CTE is non-cycic and hierarchical like XML and JSON, and supports most common data types natively.
+
+CTE should be used for situations where human readbility is a requirement, or encoding restrictions prevent binary formats. For actual data transmission and storage, it's recommended to use the much smaller and type-compatible [CBE](https://github.com/kstenerud/concise-binary-encoding), and only convert to CTE on-demand in places where a human will be inspecting the data.
 
 
 
@@ -556,32 +558,52 @@ Note: Percent-encoding sequences within URIs are NOT interpreted; they are passe
 
 ### Bytes
 
-An array of octets. This data type should only be used as a last resort if the other data types cannot represent the data you need. To maximize cross-platform compatibility, multibyte data types stored within a binary blob should be represented in little endian order whenever possible.
+An array of octets. This data type should only be used as a last resort if the other data types cannot represent the data you need. To maximize cross-platform compatibility, multibyte data types stored within a binary blob should be represented in little endian byte order whenever possible.
 
-The encoded contents can contain whitespace at any point.
+The encoded contents can contain whitespace (CR, LF, TAB, SPACE) at any point.
 
-Encoding Types:
+The supported encoding types are:
 
-Supported encoding types are [hex](https://github.com/kstenerud/safe-encoding/blob/master/safe16-specification.md), [safe64](https://github.com/kstenerud/safe-encoding/blob/master/safe64-specification.md), and [safe85](https://github.com/kstenerud/safe-encoding/blob/master/safe85-specification.md). You may choose the encoding type based on your size constraints and desired features.
+| Type   | Prefix | Bloat | Features                        |
+| ------ | ------ | ----- | ------------------------------- |
+| Hex    |    h   | 2.0   | Human readable                  |
+| Base64 |    b   | 1.33  | Smaller size, compresses better |
 
-| Type   | Prefix | Bloat | Features                                |
-| ------ | ------ | ----- | --------------------------------------- |
-| Hex    |    h   | 2.0   | Human readable, fast encoding/decoding  |
-| Safe64 |    6   | 1.33  | Fast encoding/decoding                  |
-| Safe85 |    8   | 1.25  | Smallest size, slower encoding/decoding |
 
-#### Examples
+#### Hex Encoding
 
-    h"39 12 82 e1 81 39 d9 8b 39 4c 63 9d 04 8c"
+Hex format encodes each byte into two characters (4 bits per character), using a lowercase hex alphabet (0-9, a-f). This is the most convenient method for human input of binary data.
 
-    h"1 f 4 8 ae 4 56 3" // looks terrible, but is valid
+Example:
 
-    8"8F2{*RVCLI8LDzZ!3e"
+    v1
+    {
+        ws_at_8  = h"39 12 82 e1 81 39 d9 8b 39 4c 63 9d 04 8c"
 
-    8"CmsAT9+UpvN!1v=H_SgpMm@mDHDFy(I[~!{I@2
-    yx1MU*1I[u!)NL20.1LOvFN-+cu1M_VMH_)d)HD=
-    T)I6F~3Ml=.;JP_@>Ln!H$N-xV.1MUpTNKoD71L(
-    nBIZop{LR-.0Nh}Y.1ML**I>@ziISc.1OfbXN"
+        ws_at_16 = h"1f48 ae45 63ff"
+
+        large    = h"89504e470d0a1a0a0000000d4948445200000190000001900806000000
+                     80bf36cc0000800049444154789cecbd09781cd599effd76b75a8b6559
+                     926d6c831ddb60639b2d102060c06699400281c93224f91226ebc7bd73
+                     6f6e76924c"
+    }
+
+
+#### Base64 Encoding
+
+Base64 encoding uses the [RFC 4648](https://tools.ietf.org/html/rfc4648) canonical alphabet (using `+` and `/`), with the following special rules:
+
+* Padding must not be used (the end delimiter `"` is enough to mark the end of the stream).
+* Whitespace characters (CR, LF, TAB, SPACE) can occur anywhere in the stream to help align the contents in the document and keep line lengths down.
+
+Example:
+
+    v1
+    {
+        data = b"iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAACAAElEQVR4nOy9CX
+                 gc1Znv/Xa3WotlWZJtbIMd22Bjmy0QIGDAZplAAoHJMiT5Eibrx71zb252kkzu
+                 zTKZPElmyJchIRMuWQkJSYBJyAaY"
+    }
 
 
 
