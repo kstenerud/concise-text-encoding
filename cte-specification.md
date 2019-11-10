@@ -62,11 +62,14 @@ Contents
   - [Bytes](#bytes)
 * [Container Types](#container-types)
   - [List](#list)
-  - [Unordered Map](#unordered-map)
-  - [Ordered Map](#ordered-map)
-* [Metadata Types](#metadata-types)
-  - [Metadata Map](#metadata-map)
+  - [Map](#map)
+* [Metadata](#metadata)
+  - [Metadata Association](#metadata-association)
+  - [Metadata Types](#metadata-types)
+    - [Name Clashes](#name-clashes)
+    - [Predefined Keys](#predefined-keys)
   - [Comment](#comment)
+    - [Comment Character Restrictions](#comment-character-restrictions)
 * [Other Types](#other-types)
   - [Nil](#nil)
 * [Named Values](#named-values)
@@ -105,9 +108,8 @@ The following types are natively supported, and have full type compatibility wit
 | URI               | `u"http://example.com?q=1"` |
 | Bytes             | `h"62696e6172792064617461"` |
 | List              | `[1 2 3 4]`                 |
-| Unordered Map     | `{one=1 two=2}`             |
-| Ordered Map       | `<one=1 two=2>`             |
-| Metadata Map      | `(one=1 two=2)`             |
+| Map               | `{one=1 two=2}`             |
+| Metadata          | `#{_id=12345}`              |
 | Comment           | `// A comment`              |
 | Multiline Comment | `/* A comment */`           |
 
@@ -144,15 +146,14 @@ Whitespace is used to separate elements in a container. In maps, the key and val
 
     v1
     // _ct is the creation time, in this case referring to the document
-    (_ct = 2019.9.1-22:14:01)
+    #{_ct = 2019.9.1-22:14:01}
     {
         // A comment
         /* A multiline
            comment */
-        (metadata_about_a_list = "something interesting about a_list")
+        #{metadata_about_a_list = "something interesting about a_list"}
         a_list          = [1 2 "a string"]
-        "unordered map" = {2=two 3=3000 1=one}
-        "ordered map"   = <1=one 2.5="two and a half" 3=3000>
+        map             = {2=two 3=3000 1=one}
         boolean         = @true
         "binary int"    = -0b10001011
         "octal int"     = 0o644
@@ -615,6 +616,8 @@ Container Types
 
 A sequential list of objects. Lists can contain any mix of any type, including other containers.
 
+A list is ordered by default unless otherwise understood between parties (for example via a schema), or the user has specified that order doesn't matter. Other characteristics (such as non-duplicate data in the case of sets) must be a-priori understood between parties.
+
 A list begins with an opening square bracket `[`, whitespace separated contents, and finally a closing bracket `]`.
 
 Note: While this spec allows mixed types in lists, not all languages do. Use mixed types with caution.
@@ -624,9 +627,11 @@ Note: While this spec allows mixed types in lists, not all languages do. Use mix
     [1 two 3.1 {} @nil]
 
 
-### Unordered Map
+### Map
 
-A unordered map associates objects (keys) with other objects (values), storing the key-value pairs in no particular order. Implementations must not rely on any incidental ordering. Keys can be any mix of scalar or array types. A key must not be a container type, the `@nil` type, or any value that evaluates to NaN (not-a-number). Values can be any mix of any type, including other containers.
+A map associates objects (keys) with other objects (values). Keys can be any mix of scalar or array types. A key must not be a container type, the `@nil` type, or any value that evaluates to NaN (not-a-number). Values can be any mix of any type, including other containers.
+
+A map is ordered by default unless otherwise understood between parties (for example via a schema), or the user has specified that order doesn't matter.
 
 All keys in a map must resolve to a unique value, even across data types. For example, the following keys would clash:
 
@@ -635,7 +640,7 @@ All keys in a map must resolve to a unique value, even across data types. For ex
 
 Map entries are split into key-value pairs using the equals `=` character and optional whitespace. Key-value pairs must be separated from each other using whitespace. A key without a paired value is invalid.
 
-An unordered map begins with an opening curly brace `{`, whitespace separated key-value pairs, and finally a closing brace `}`.
+A map begins with an opening curly brace `{`, whitespace separated key-value pairs, and finally a closing brace `}`.
 
 Note: While this spec allows mixed types in maps, not all languages do. Use mixed types with caution.
 
@@ -648,43 +653,30 @@ Note: While this spec allows mixed types in maps, not all languages do. Use mixe
     }
 
 
-### Ordered Map
 
-An ordered map works the same as an unordered map, except that the order of the key-value pairs in the map is significant, and must be preserved.
-
-Ordered maps use angle brackets `<` and `>` instead of curly braces `{` and `}`.
-
-#### Example
-
-    <
-        first_item           = "This is the first item"
-        second_item          = "This is the second item"
-        previous_second_item = "This used to be the second item"
-    >
-
-
-
-Metadata Types
---------------
+Metadata
+--------
 
 Metadata is data about the data. It describes whatever data follows it in a document, which might or might not necessarily be of interest to a consumer of the data. For this reason, decoders are free to ignore and discard metadata if they so choose. Senders and receivers should negotiate beforehand how to react to metadata.
+
+Metadata must only be placed in front of another object. It cannot be placed at the end of a document, or before the version specifier. A CTE document containing only metadata and no real objects (for example `v1 #{a=1}`) is invalid.
 
 
 ### Metadata Association
 
 Metadata objects are pseudo-objects that can be placed anywhere a real object can be placed, but do not count as objects themselves. Instead, metadata is associated with the object that follows it. For example:
 
-    {"a key" = (some_metadata=500) "a value"}
+    {"a key" = #{some_metadata=500} "a value"}
 
 In this case, the metadata refers to the value `"a value"`, but the actual data for purposes of decoding the map is `{"a key" = "a value"}`.
 
-    { "a key" = (some_metadata=500) }
+    { "a key" = #{some_metadata=500} }
 
 This map is invalid, because it resolves to `{"a key"}`, where no value is associated with the key (the metadata doesn't count).
 
 Metadata can also refer to other metadata, for example:
 
-    { (metadata_outer=1) (metadata_inner=1) "a key" = "a value" }
+    { #{metadata_outer=1} #{metadata_inner=1} "a key" = "a value" }
 
 In this case, `metadata_outer` refers to `metadata_inner`, and `metadata_inner` refers to the string `"a key"`. The actual map is `{"a key" = "a value"}`.
 
@@ -692,62 +684,71 @@ In this case, `metadata_outer` refers to `metadata_inner`, and `metadata_inner` 
 
 The metadata association rules do not apply to [comments](#comment). Comments stand entirely on their own, and do not officially refer to anything, nor can any other metadata refer to a comment (i.e. comments are invisible to other metadata). This is to keep their usage consistent with how comments are used in existing languages.
 
-    { (metadata_outer=1) (metadata_inner=1) /* a comment */ "a key" = "a value" }
+    { #{metadata_outer=1} #{metadata_inner=1} /* a comment */ "a key" = "a value" }
 
 In this case, `metadata_inner` still refers to `"a key"`, not `a comment`, and `a comment` doesn't officially refer to anything.
 
 
-### Metadata Map
+### Metadata Types
 
-A metadata map is an **ordered map** containing metadata about the object that follows the map. A metadata map can contain anything that an ordered map can, but all string keys that begin with an underscore (`_`) are reserved, and must not be used except in the ways defined by this specification.
-
-Metadata map contents are enclosed within parentheses: `(` and `)`
+Metadata begins with a `#` character, and the object immediately following it is considered metadata. You could, for example, have a number as metadata (`#150`). However, the most useful metadata type is a map (`#{}`).
 
 #### Name Clashes
 
-There are various metadata standards in use today (https://en.wikipedia.org/wiki/Metadata_standard). Care should be taken to ensure that your chosen metadata system doesn't clash with other established naming schemes. In general, international standards tend to use URI style identifiers, so the risk is usually minimal when applying string and numeric keys. However, a little foresight and research goes a long way towards avoiding pain down the line!
+There are various metadata standards in use today (https://en.wikipedia.org/wiki/Metadata_standard). Care should be taken to ensure that your chosen metadata system doesn't clash with other established naming schemes.
 
-#### Predefines Keys
+#### Predefined Keys
+
+All metadata map keys beginning with `_` are reserved, and must not be used except according to this section.
 
 This standard specifies predefined keys for the most common metadata in ad-hoc data structures. Specifying these keys maximizes the chances of disparate systems understanding one other, and avoids a lot of duplication.
 
 The following predefined metadata keys must be used for the specified type of information (decoders must accept both regular and short key versions):
 
-| Regular Key          | Short Key | Type          | Contents          |
-| -------------------- | --------- | ------------- | ----------------- |
-| `_creation_time`     | `_ct`     | Timestamp     | Creation time     |
-| `_modification_time` | `_mt`     | Timestamp     | Modification time |
-| `_access_time`       | `_at`     | Timestamp     | Last access time  |
-| `_tags`              | `_t`      | List          | Set of tags       |
-| `_attributes`        | `_a`      | Unordered Map | Attributes        |
+| Regular Key          | Short Key | Type            | Contents                                                       |
+| -------------------- | --------- | --------------- | -------------------------------------------------------------- |
+| `_access_time`       | `_at`     | Timestamp       | Last access time                                               |
+| `_attributes`        | `_a`      | Map<String:Any> | Attributes                                                     |
+| `_copyright`         | `_co`     | String or URI   | Holder of copyright over data (Name or URI)                    |
+| `_creation_time`     | `_ct`     | Timestamp       | Creation time                                                  |
+| `_creator`           | `_c`      | List<String>    | Creator(s) of the data                                         |
+| `_data_type`         | `_dt`     | String          | https://www.iana.org/assignments/media-types/media-types.xhtml |
+| `_description`       | `_d`      | String          | Free-form description                                          |
+| `_id`                | `_id`     | Any             | Identifier                                                     |
+| `_language`          | `_l`      | String          | ISO 639 alpha-2 or alpha-3 code                                |
+| `_license`           | `_li`     | URI             | Pointer to the license granted on this data                    |
+| `_modification_time` | `_mt`     | Timestamp       | Modification time                                              |
+| `_origin`            | `_o`      | List<URI>       | Origin(s) of this data                                         |
+| `_schema`            | `_s`      | URI             | Schema describing how to interpret the data                    |
+| `_specification`     | `_sp`     | URI             | Human-readable specification about the data                    |
+| `_tags`              | `_t`      | List<String>    | Set of tags describing this data                               |
 
 All other metadata keys beginning with `_` are reserved for future expansion, and must not be used.
-
-Note: Metadata must not be placed before the [version specifier](#version-specifier).
 
 #### Example
 
     v1
     // Metadata for the entire document
-    (
+    #{
         _ct = 2017.01.14-15:22:41/Z
         _mt = 2019.08.17-12:44:31/Z
         _at = 2019.09.14-09:55:00/Z
-    )
+    }
     {
+        #{ _o=[u"https://all-your-data-are-belong-to-us.com"] }
         records = [
             // Metadata for "ABC Corp" record
-            (
+            #{
                 _ct = 2019.05.14-10:22:55/Z
                 _t = ["longtime client" "big purchases"]
-            )
+            }
             {
                 client = "ABC Corp"
                 amount = 10499.28
                 due = 2020.05.14
             }
             // Metadata for "XYZ Corp" record
-            ( _ct = 2019.02.30-09:00:01/Z  _mt = 2019.08.17-12:44:31/Z )
+            #{ _ct=2019.02.30-09:00:01/Z _mt=2019.08.17-12:44:31/Z }
             {
                 client = "XYZ Corp"
                 amount = 3994.01
@@ -880,7 +881,7 @@ While there are many characters classified as "whitespace" within the Unicode se
 
  * Before an object.
  * After an object.
- * Between array/container openings & closings: `[`, `]`, `{`, `}`, `<`, `>`, `(`, `)`
+ * Between array/container openings & closings: `[`, `]`, `{`, `}`
  * Between encoding characters in a byte array, and between array delimiters `"`.
 
 Examples:
