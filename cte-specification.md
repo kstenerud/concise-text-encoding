@@ -481,7 +481,7 @@ A timestamp combines a date and a time, separated by a slash character (`/`).
 Array Types
 -----------
 
-An "array" for the purposes of this spec represents a contiguous sequence of octets.
+An "array" for the purposes of this spec represents a contiguous sequence of octets. The array type determines how those octets are to be interpreted.
 
 All arrays begin with an encoding type (with the exception of string), followed by the data enclosed within double-quotes (`"`). There must be no whitespace between the encoding type and the opening double-quote.
 
@@ -544,8 +544,6 @@ Does not require quotes:
 Uniform Resource Identifier, structured in accordance with [RFC 3986](https://tools.ietf.org/html/rfc3986). Instances of the double-quote character(`"`), control characters, whitespace characters, line break characters, and any characters not editable in a utf-8 capable editor must be percent-encoded.
 
 URIs have the encoding type `u`.
-
-Note: Percent-encoding sequences within URIs must not be interpreted; they must be passed through as-is.
 
 #### Examples
 
@@ -699,31 +697,9 @@ There are various metadata standards in use today (https://en.wikipedia.org/wiki
 
 #### Predefined Keys
 
-All metadata map keys beginning with `_` are reserved, and must not be used except according to this section.
+The [Concise Encoding Metadata specification](https://https://github.com/kstenerud/concise-encoding-metadata/concise-encoding-metadata.md) contains a list of prefedined metadata keys for use in CTE and CBE. All metadata map keys beginning with `_` are reserved, and must not be used except according to the metadata specification.
 
-This standard specifies predefined keys for the most common metadata in ad-hoc data structures. Specifying these keys maximizes the chances of disparate systems understanding one other, and avoids a lot of duplication.
-
-The following predefined metadata keys must be used for the specified type of information (decoders must accept both regular and short key versions):
-
-| Regular Key          | Short Key | Type            | Contents                                                       |
-| -------------------- | --------- | --------------- | -------------------------------------------------------------- |
-| `_access_time`       | `_at`     | Timestamp       | Last access time                                               |
-| `_attributes`        | `_a`      | Map<String:Any> | Attributes                                                     |
-| `_copyright`         | `_co`     | String or URI   | Holder of copyright over data (Name or URI)                    |
-| `_creation_time`     | `_ct`     | Timestamp       | Creation time                                                  |
-| `_creator`           | `_c`      | List<String>    | Creator(s) of the data                                         |
-| `_data_type`         | `_dt`     | String          | https://www.iana.org/assignments/media-types/media-types.xhtml |
-| `_description`       | `_d`      | String          | Free-form description                                          |
-| `_id`                | `_id`     | Any             | Identifier                                                     |
-| `_language`          | `_l`      | String          | ISO 639 alpha-2 or alpha-3 code                                |
-| `_license`           | `_li`     | URI             | Pointer to the license granted on this data                    |
-| `_modification_time` | `_mt`     | Timestamp       | Modification time                                              |
-| `_origin`            | `_o`      | List<URI>       | Origin(s) of this data                                         |
-| `_schema`            | `_s`      | URI             | Schema describing how to interpret the data                    |
-| `_specification`     | `_sp`     | URI             | Human-readable specification about the data                    |
-| `_tags`              | `_t`      | List<String>    | Set of tags describing this data                               |
-
-All other metadata keys beginning with `_` are reserved for future expansion, and must not be used.
+Implementations should make use of the predefined keys whenever possible to maximize interoperability between systems.
 
 #### Example
 
