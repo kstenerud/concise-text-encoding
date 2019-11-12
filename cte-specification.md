@@ -689,7 +689,13 @@ In this case, `metadata_inner` still refers to `"a key"`, not `a comment`, and `
 
 ### Metadata Types
 
-Metadata begins with a `#` character, and the object immediately following it is considered metadata. You could, for example, have a number as metadata (`#150`). However, the most useful metadata type is a map (`#{}`).
+Metadata begins with a metadata initiator `#`. The object immediately following it is considered metadata, with the following rules:
+
+* There must be no whitespace between the metadata initiator and the object following it: `# {_t=[tag1]}` is invalid.
+* A comment must not follow the metadata initiator: `#// a comment` and `#/* a comment */` are invalid.
+* A metadata initiator must not follow another metadata initiator: `##` is invalid.
+
+The most common metadata type is a map (`#{}`), but it's also possible to use other types, for example `#150`.
 
 #### Name Clashes
 
@@ -877,6 +883,7 @@ Examples:
 
  * Before the [version specifier](#version-specifier).
  * Between an array encoding type and the opening double-quote (`h "` is invalid).
+ * Between a metadata initiator (`#`) and the object it references (`# {}` is invalid)
  * Splitting a time value (`2018.07.01-10 :53:22.001481/Z` is invalid).
  * Splitting a numeric value (`3f h`, `9. 41`, `3 000`, `9.3 e+3`, `- 1.0` are invalid). Use the numeric whitespace character (`_`) instead.
  * Splitting named values: (`@t rue`, `@ nil`, `@i nf`, `@n a n` are invalid).
