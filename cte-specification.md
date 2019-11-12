@@ -910,7 +910,7 @@ Invalid encodings must not be used, as they will likely cause problems or even A
  * All map keys must have corresponding values. A key with a missing value is invalid.
  * Map keys must not be container types, the `@nil` type, or values the resolve to NaN (not-a-number).
  * Maps must not contain duplicate keys. This includes numeric keys of different types that resolve to the same value.
- * Metadata map keys beginning with `_` must not be used, except for those listed in this specifiction.
+ * Metadata map keys beginning with `_` must not be used, except in accordance with the [Concise Encoding Metadata specification](https://github.com/kstenerud/concise-encoding-metadata/blob/master/concise-encoding-metadata.md).
  * Upper case text is not allowed, except as described in section [Letter Case](#letter-case).
  * Whitespace must only occur as described in section [Whitespace](#whitespace).
 
