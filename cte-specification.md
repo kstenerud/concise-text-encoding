@@ -3,36 +3,38 @@ Concise Text Encoding
 
 Concise Text Encoding (CTE) is a general purpose, human friendly, compact representation of semi-structured hierarchical data.
 
-Data communications have become needlessly bloated, wasting bandwidth and power serializing, deserializing, and transmitting data in text formats. The open, text based encodings like SGML, HTML, XML, and JSON, got us past the obscure, proprietary formats of the 90s. But now their size, codec complexity, and limited type support are becoming liabilities. The available binary formats also suffer from lack of types, unnecessary complexity, and can't be read or edited by humans (a major benefit of text formats).
+Data communications have become needlessly bloated, wasting bandwidth and power serializing, deserializing, and transmitting data in text formats. The open, text based encodings like SGML, HTML, XML, and JSON got us past the obscure, proprietary formats of the 90s. But now their size, codec complexity, and limited type support are becoming liabilities. The available binary formats also suffer from lack of types or are unnecessarily complex, and can't be read or edited by humans (a major benefit of text formats).
 
-The age of plentiful bandwidth and processing power is almost over. Energy efficiency in software and data transmission is fast becoming a serious cost, battery, heat dissipation, and environmental issue. We must meet these challenges with data formats that are versatile, compact, and computationally simple to process when on the critical path, while also retaining human readability and editability.
+The age of plentiful bandwidth and processing power is coming to an end. Energy efficiency in software and data transmission is fast becoming a serious cost, battery, heat dissipation, and environmental issue. We must meet these challenges with data formats that are versatile, compact, and computationally simple to process when on the critical path, while also retaining human readability and editability.
 
 Concise Encoding is the next step in the evolution of ad-hoc hierarchical data formats, aiming to support 80% of data use cases in a power and bandwidth friendly way:
 
  * Completely redesigned from the ground up to balance human readability, encoded size, and codec complexity.
  * Split into two formats: [binary-based CBE](https://github.com/kstenerud/concise-binary-encoding) and [text-based CTE](https://github.com/kstenerud/concise-text-encoding).
  * 1:1 type compatibility between formats, allowing transparent conversion between CBE and CTE. You can use the more efficient binary format for data interchange and storage, and convert to/from text only when a human needs to be involved.
- * Little endian is ubiquitous nowadays, and so fixed-length multi-byte data fields in CBE are stored in little endian byte order to avoid extra processing in the most popular hardware.
+ * Fixed-length multi-byte data fields are encoded in little endian byte order to avoid extra processing in the most popular hardware.
  * CBE and CTE are fully specified, eliminating ambiguities and covering edge cases.
  * Documents and specifications are versioned to support future expansion.
  * Support for metadata and comments.
+ * Support for references to other parts of the document or to other documents.
  * Support for the most commonly used data types:
 
-| Type              | Example                     |
-| ----------------- | --------------------------- |
-| Nil               | `@nil`                      |
-| Boolean           | `@true`                     |
-| Integer           | `-1_000_000_000_000_000`    |
-| Float             | `4.8255`                    |
-| Time              | `2019-7-15/18:04:00/E/Rome` |
-| String            | `"A string"`                |
-| URI               | `u"http://example.com?q=1"` |
-| Bytes             | `h"62696e6172792064617461"` |
-| List              | `[1 2 3 4]`                 |
-| Map               | `{one=1 two=2}`             |
-| Metadata          | `#{_id=12345}`              |
-| Comment           | `// A comment`              |
-| Multiline Comment | `/* A comment */`           |
+| Type              | Example                        |
+| ----------------- | ------------------------------ |
+| Nil               | `@nil`                         |
+| Boolean           | `@true`                        |
+| Integer           | `-1_000_000_000_000_000`       |
+| Float             | `4.8255`                       |
+| Time              | `2019-7-15/18:04:00/E/Rome`    |
+| String            | `"A string"`                   |
+| URI               | `u"http://example.com?q=1"`    |
+| Bytes             | `h"62696e6172792064617461"`    |
+| List              | `[1 2 3 4]`                    |
+| Map               | `{one=1 two=2}`                |
+| Metadata Map      | `(_id=12345)`                  |
+| Marker/Reference  | `*a_ref "something"`, `#a_ref` |
+| Comment           | `// A comment`                 |
+| Multiline Comment | `/* A comment */`              |
 
 
 
@@ -78,13 +80,14 @@ Contents
   - [Map](#map)
 * [Metadata](#metadata)
   - [Metadata Association](#metadata-association)
-  - [Metadata Types](#metadata-types)
-    - [Name Clashes](#name-clashes)
-    - [Predefined Keys](#predefined-keys)
+  - [Metadata Map](#metadata-map)
   - [Comment](#comment)
     - [Comment Character Restrictions](#comment-character-restrictions)
 * [Other Types](#other-types)
   - [Nil](#nil)
+  - [Marker](#marker)
+    - [Tag Value](#tag-value)
+  - [Reference](#reference)
 * [Named Values](#named-values)
 * [Letter Case](#letter-case)
 * [Whitespace](#whitespace)
@@ -125,29 +128,32 @@ Whitespace is used to separate elements in a container. In maps, the key and val
 
     v1
     // _ct is the creation time, in this case referring to the document
-    #{_ct = 2019.9.1-22:14:01}
+    (_ct = 2019.9.1-22:14:01)
     {
         // A comment
         /* A multiline
            comment */
-        #{metadata_about_a_list = "something interesting about a_list"}
-        a_list          = [1 2 "a string"]
-        map             = {2=two 3=3000 1=one}
-        boolean         = @true
-        "binary int"    = -0b10001011
-        "octal int"     = 0o644
-        "regular int"   = -10000000
-        "hex int"       = 0xfffe0001
-        "decimal float" = -14.125
-        "hex float"     = 0x5.1ec4p20
-        date            = 2019.7.1
-        time            = 18:04:00.940231541/E/Prague
-        timestamp       = 2010-7-15/13:28:15.415942344/Z
-        nil             = @nil
-        bytes           = h"10ff389add004f4f91"
-        url             = u"https://example.com/"
-        email           = u"mailto:me@somewhere.com"
-        1               = "Keys don't have to be strings"
+        (metadata_about_a_list = "something interesting about a_list")
+        a_list           = [1 2 "a string"]
+        map              = {2=two 3=3000 1=one}
+        *tagged original = "Something we'd like to reference later"
+        boolean          = @true
+        "binary int"     = -0b10001011
+        "octal int"      = 0o644
+        "regular int"    = -10000000
+        "hex int"        = 0xfffe0001
+        "decimal float"  = -14.125
+        "hex float"      = 0x5.1ec4p20
+        date             = 2019.7.1
+        time             = 18:04:00.940231541/E/Prague
+        timestamp        = 2010-7-15/13:28:15.415942344/Z
+        nil              = @nil
+        bytes            = h"10ff389add004f4f91"
+        url              = u"https://example.com/"
+        email            = u"mailto:me@somewhere.com"
+        1                = "Keys don't have to be strings"
+        ref1             = #tagged
+        ref2             = #tagged
     }
 
 The top-level object can also be a non-container type, for example:
@@ -160,6 +166,8 @@ The top-level object can also be a non-container type, for example:
 All CTE documents must begin with a version specifier, which must not be preceded by whitespace. In other words, the very first byte of a CTE document must be `v` (0x76).
 
 The version specifier is the lowercase letter `v` followed immediately by a number representing the version of this specification that the document adheres to (there must not be whitespace between the `v` and the number). The version specifier must be followed by whitespace to separate it from the rest of the document.
+
+Note: Because CBE places the version as the first byte in a document, the version value 118 is invalid. If 118 were allowed, it would clash with CTE when differentiating the file type by its contents because CTE uses `v` (0x76, or 118) as its first byte.
 
 #### Examples
 
@@ -227,9 +235,9 @@ A floating point number is composed of a whole part and a fractional part, separ
 
 The exponential portion of a base-10 number is denoted by the lowercase character `e`, followed by the signed size of the exponent (using `+` for positive and `-` for negative). The exponent's sign character may be omitted if it's positive. The exponent portion is a signed base-10 number representing the power-of-10 to multiply the significand by. Values must be normalized (only one digit to the left of the decimal point).
 
-* `6.411e+9` = 6411000000
-* `6.411e9` = 6411000000
-* `6.411e-9` = 0.000000006411
+ * `6.411e+9` = 6411000000
+ * `6.411e9` = 6411000000
+ * `6.411e-9` = 0.000000006411
 
 There is no maximum number of significant digits or exponent digits, but care should be taken to ensure that the receiving end will be able to store the value. 64-bit ieee754 floating point values, for example, can store up to 16 significant digits.
 
@@ -237,8 +245,8 @@ There is no maximum number of significant digits or exponent digits, but care sh
 
 Base-16 floating point numbers allow 100% accurate representation of ieee754 binary floating point values. They begin with `0x`, and the exponential portion is denoted by the lowercase character `p`. The exponential portion is a signed base-10 number representing the power-of-2 to multiply the significand by. The exponent's sign character may be omitted if it's positive. Values should be normalized unless the source ieee754 value being represented is subnormal.
 
-* `0xa.3fb8p+42` = a.3fb8 x 2 ^ 42
-* `0x1.0p0` = 1
+ * `0xa.3fb8p+42` = a.3fb8 x 2 ^ 42
+ * `0x1.0p0` = 1
 
 Base-16 notation should only be used to support legacy systems that can't handle decimal rounded values. Decimal floating point values tend to be smaller, and also avoid the false precision of binary floating point values. [More info](https://github.com/kstenerud/compact-float/blob/master/compact-float-specification.md#how-much-precision-do-you-need)
 
@@ -291,8 +299,8 @@ The `_` character can be used as "numeric whitespace" when encoding numeric valu
 
 Rules:
 
-* Numeric values of any type can contain any amount of whitespace at any point after the first digit and before the last digit.
-* Special named values `@nan`, `@snan`, and `@inf` must not contain whitespace.
+ * Numeric values of any type can contain any amount of whitespace at any point after the first digit and before the last digit.
+ * Special named values `@nan`, `@snan`, and `@inf` must not contain whitespace.
 
 | Value       | Valid Whitespace     | Invalid Whitespace | Notes                                         |
 | ----------- | -------------------- | ------------------ | --------------------------------------------- |
@@ -375,10 +383,10 @@ The following special psuedo-areas can also be used. They do not contain a locat
 
 ##### Examples
 
-* `E/Paris`
-* `America/Vancouver`
-* `Etc/UTC` == `Zero` == `Z`
-* `L`
+ * `E/Paris`
+ * `America/Vancouver`
+ * `Etc/UTC` == `Zero` == `Z`
+ * `L`
 
 
 #### Global Coordinates
@@ -389,8 +397,8 @@ This method has the advantage of being unambiguous, which can be useful for area
 
 ##### Examples
 
-* `51.60/11.11`
-* `-13.53/-172.37`
+ * `51.60/11.11`
+ * `-13.53/-172.37`
 
 
 ### Date
@@ -407,9 +415,9 @@ A date is made up of the following fields, separated by a dash character (`-`):
 
 #### Examples
 
-* `2019-8-5`: August 5, 2019
-* `5081-03-30`: March 30, 5081
-* `-300-12-21`: December 21, 300 BC (proleptic Gregorian)
+ * `2019-8-5`: August 5, 2019
+ * `5081-03-30`: March 30, 5081
+ * `-300-12-21`: December 21, 300 BC (proleptic Gregorian)
 
 
 
@@ -429,20 +437,20 @@ A time is made up of the following fields:
 
 #### Notes
 
-* Hours are always written according to the 24h clock (21:00, not 9:00 PM).
-* Minutes and seconds must always be padded to 2 digits.
-* Seconds go to 60 to support leap seconds.
-* Since there is no date component, time zone data must be interpreted as if it were "today", and so the time might not remain constant should the political situation at that time zone change at a later date (except when using `Etc/GMT+1`, etc).
-* If the time zone is unspecified, it is assumed to be `Zero` (UTC).
+ * Hours are always written according to the 24h clock (21:00, not 9:00 PM).
+ * Minutes and seconds must always be padded to 2 digits.
+ * Seconds go to 60 to support leap seconds.
+ * Since there is no date component, time zone data must be interpreted as if it were "today", and so the time might not remain constant should the political situation at that time zone change at a later date (except when using `Etc/GMT+1`, etc).
+ * If the time zone is unspecified, it is assumed to be `Zero` (UTC).
 
 #### Examples
 
-* `9:04:21`: 9:04:21 UTC
-* `23:59:59.999999999`: 23:59:59 and 999999999 nanoseconds UTC
-* `12:05:50.102/Z`: 12:05:50 and 102 milliseconds UTC
-* `4:00:00/Asia/Tokyo`: 4:00:00 Tokyo time
-* `17:41:03/-13.54/-172.36`: 17:41:03 Samoa time
-* `9:00:00/L`: 9:00:00 local time
+ * `9:04:21`: 9:04:21 UTC
+ * `23:59:59.999999999`: 23:59:59 and 999999999 nanoseconds UTC
+ * `12:05:50.102/Z`: 12:05:50 and 102 milliseconds UTC
+ * `4:00:00/Asia/Tokyo`: 4:00:00 Tokyo time
+ * `17:41:03/-13.54/-172.36`: 17:41:03 Samoa time
+ * `9:00:00/L`: 9:00:00 local time
 
 
 ### Timestamp
@@ -451,9 +459,9 @@ A timestamp combines a date and a time, separated by a slash character (`/`).
 
 #### Examples
 
-* `2019-01-23/14:08:51.941245`: January 23, 2019, at 14:08:51 and 941245 microseconds, UTC
-* `1985-10-26/01:20:01.105/M/Los_Angeles`: October 26, 1985, at 1:20:01 and 105 milliseconds, Los Angeles time
-* `5192-11-01/03:00:00/48.86/2.36`: November 1st, 5192, at 3:00:00, at whatever is in the place of Paris at that time
+ * `2019-01-23/14:08:51.941245`: January 23, 2019, at 14:08:51 and 941245 microseconds, UTC
+ * `1985-10-26/01:20:01.105/M/Los_Angeles`: October 26, 1985, at 1:20:01 and 105 milliseconds, Los Angeles time
+ * `5192-11-01/03:00:00/48.86/2.36`: November 1st, 5192, at 3:00:00, at whatever is in the place of Paris at that time
 
 
 
@@ -497,10 +505,11 @@ Note: While carriage return (u+000d) is technically allowed in strings, line end
 
 Normally, strings must be enclosed within double-quotes (`"`), but this rule can be relaxed if:
 
-* The string does not begin with a character from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
-* The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, numerals 0-9, and underscore (`_`).
-* The string does not contain unicode characters or sequences that would be mistaken by a human reader for symbol characters in the u+0000 to u+007f range (``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``).
-* The string does not contain escape sequences or whitespace or line breaks or unprintable characters.
+ * The string does not begin with a character from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, and underscore (`_`).
+ * The string does not contain characters from u+0000 to u+007f, with the exception of lowercase a-z, uppercase A-Z, numerals 0-9, and underscore (`_`).
+ * The string does not contain unicode characters or sequences that would be mistaken by a human reader for symbol characters in the u+0000 to u+007f range (``!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~``).
+ * The string does not contain escape sequences or whitespace or line breaks or unprintable characters.
+ * The string is not empty (`""`).
 
 #### Example
 
@@ -543,10 +552,10 @@ The encoded contents can contain whitespace (CR, LF, TAB, SPACE) at any point. I
 
 The supported encoding types are:
 
-| Type   | Prefix | Bloat | Features                        |
-| ------ | ------ | ----- | ------------------------------- |
-| Hex    |    h   | 2.0   | Human readable                  |
-| Base64 |    b   | 1.33  | Smaller size, compresses better |
+| Type      | Prefix | Bloat | Features                        |
+| --------- | ------ | ----- | ------------------------------- |
+| Hex       |    h   | 2.0   | Human readable                  |
+| Base64url |    b   | 1.33  | Smaller size, compresses better |
 
 
 #### Hex Encoding
@@ -568,19 +577,19 @@ Example:
     }
 
 
-#### Base64 Encoding
+#### Base64url Encoding
 
-Base64 encoding uses the [RFC 4648](https://tools.ietf.org/html/rfc4648) canonical alphabet (using `+` and `/`), with the following special rules:
+Base64url encoding uses the [RFC 4648](https://tools.ietf.org/html/rfc4648) url-safe alphabet (using `-` and `_`), with the following special rules:
 
-* Padding must not be used (the end delimiter `"` is enough to mark the end of the stream).
-* Whitespace characters (CR, LF, TAB, SPACE) can occur anywhere in the stream to help align the contents in the document and keep line lengths down.
+ * Padding must not be used (the end delimiter `"` is enough to mark the end of the stream).
+ * Whitespace characters (CR, LF, TAB, SPACE) can occur anywhere in the stream to help align the contents in the document and keep line lengths down (the idea is to make it easy to open and modify a CTE document in your average text editor).
 
 Example:
 
     v1
     {
         data = b"iVBORw0KGgoAAAANSUhEUgAAAZAAAAGQCAYAAACAvzbMAACAAElEQVR4nOy9CX
-                 gc1Znv/Xa3WotlWZJtbIMd22Bjmy0QIGDAZplAAoHJMiT5Eibrx71zb252kkzu
+                 gc1Znv_Xa3WotlWZJtbIMd22Bjmy0QIGDAZplAAoHJMiT5Eibrx71zb252kkzu
                  zTKZPElmyJchIRMuWQkJSYBJyAaY"
     }
 
@@ -636,24 +645,24 @@ Metadata
 
 Metadata is data about the data. It describes whatever data follows it in a document, which might or might not necessarily be of interest to a consumer of the data. For this reason, decoders are free to ignore and discard metadata if they so choose. Senders and receivers should negotiate beforehand how to react to metadata.
 
-Metadata must only be placed in front of another object. It cannot be placed at the end of a document, or before the version specifier. A CTE document containing only metadata and no real objects (for example `v1 #{a=1}`) is invalid.
+Metadata must only be placed in front of another object. It cannot be placed at the end of a document, or before the version specifier. A CTE document containing only metadata and no real objects (for example `v1 (a=1)`) is invalid.
 
 
 ### Metadata Association
 
 Metadata objects are pseudo-objects that can be placed anywhere a real object can be placed, but do not count as objects themselves. Instead, metadata is associated with the object that follows it. For example:
 
-    {"a key" = #{some_metadata=500} "a value"}
+    {"a key" = (some_metadata=500) "a value"}
 
 In this case, the metadata refers to the value `"a value"`, but the actual data for purposes of decoding the map is `{"a key" = "a value"}`.
 
-    { "a key" = #{some_metadata=500} }
+    { "a key" = (some_metadata=500) }
 
 This map is invalid, because it resolves to `{"a key"}`, where no value is associated with the key (the metadata doesn't count).
 
 Metadata can also refer to other metadata, for example:
 
-    { #{metadata_outer=1} #{metadata_inner=1} "a key" = "a value" }
+    { (metadata_outer=1) (metadata_inner=1) "a key" = "a value" }
 
 In this case, `metadata_outer` refers to `metadata_inner`, and `metadata_inner` refers to the string `"a key"`. The actual map is `{"a key" = "a value"}`.
 
@@ -661,55 +670,46 @@ In this case, `metadata_outer` refers to `metadata_inner`, and `metadata_inner` 
 
 The metadata association rules do not apply to [comments](#comment). Comments stand entirely on their own, and do not officially refer to anything, nor can any other metadata refer to a comment (i.e. comments are invisible to other metadata). This is to keep their usage consistent with how comments are used in existing languages.
 
-    { #{metadata_outer=1} #{metadata_inner=1} /* a comment */ "a key" = "a value" }
+    { (metadata_outer=1) (metadata_inner=1) /* a comment */ "a key" = "a value" }
 
 In this case, `metadata_inner` still refers to `"a key"`, not `a comment`, and `a comment` doesn't officially refer to anything.
 
 
-### Metadata Types
+### Metadata Map
 
-Metadata begins with a metadata initiator `#`. The object immediately following it is considered metadata, with the following rules:
+A metadata map contains keyed values which are associated with the object that follows the metadata map. Metadata maps are delimited by parentheses: `(` and `)`.
 
-* There must be no whitespace between the metadata initiator and the object following it: `# {_t=[tag1]}` is invalid.
-* A comment must not follow the metadata initiator: `#// a comment` and `#/* a comment */` are invalid.
-* A metadata initiator must not follow another metadata initiator: `##` is invalid.
+Keys in metadata maps follow the same rules as for regular maps, except that all string typed keys beginning with the underscore `_` character are reserved for predefined keys, and must only be used in accordance with the [Concise Encoding Metadata specification](https://github.com/kstenerud/concise-encoding-metadata/blob/master/concise-encoding-metadata.md).
 
-The most common metadata type is a map (`#{}`), but it's also possible to use other types, for example `#150`.
+Implementations should make use of predefined metadata keys whenever possible to maximize interoperability between systems.
 
-#### Name Clashes
-
-There are various metadata standards in use today (https://en.wikipedia.org/wiki/Metadata_standard). Care should be taken to ensure that your chosen metadata system doesn't clash with other established naming schemes.
-
-#### Predefined Keys
-
-The [Concise Encoding Metadata specification](https://github.com/kstenerud/concise-encoding-metadata/blob/master/concise-encoding-metadata.md) contains a list of prefedined metadata keys for use in CTE and CBE. All metadata map keys beginning with `_` are reserved, and must not be used except according to the metadata specification.
-
-Implementations should make use of the predefined keys whenever possible to maximize interoperability between systems.
-
-#### Example
+Example:
 
     v1
     // Metadata for the entire document
-    #{
+    (
         _ct = 2017.01.14-15:22:41/Z
         _mt = 2019.08.17-12:44:31/Z
         _at = 2019.09.14-09:55:00/Z
-    }
+    )
     {
-        #{ _o=[u"https://all-your-data-are-belong-to-us.com"] }
+        ( _o=[u"https://all-your-data-are-belong-to-us.com"] )
         records = [
             // Metadata for "ABC Corp" record
-            #{
+            (
                 _ct = 2019.05.14-10:22:55/Z
                 _t = ["longtime client" "big purchases"]
-            }
-            {
+            )
+            (
                 client = "ABC Corp"
                 amount = 10499.28
                 due = 2020.05.14
-            }
+            )
             // Metadata for "XYZ Corp" record
-            #{ _ct=2019.02.30-09:00:01/Z _mt=2019.08.17-12:44:31/Z }
+            (
+                _ct=2019.02.30-09:00:01/Z
+                _mt=2019.08.17-12:44:31/Z
+            )
             {
                 client = "XYZ Corp"
                 amount = 3994.01
@@ -788,6 +788,60 @@ Note: Use nil judiciously and sparingly, as some languages might have restrictio
     @nil
 
 
+### Marker
+
+A marker tags an object in the document with a [tag value](#tag-value) such that it can be referenced in another part of the document. The next object following the marker is associated with the marker's tag value. Markers are not objects themselves, and are for all intents and purposes invisible to all other objects (they don't count as values in collections, for example).
+
+A marker begins with the marker initiator (`*`), followed immediately (with no whitespace) by a [tag value](#tag-value).
+
+Rules:
+
+ * A marker cannot mark a comment; instead it would mark the next non-comment object.
+ * A marker must not be followed by another marker (even with comments in between); markers must reference objects, not other markers.
+ * Marker tags are globally unique to the document; duplicate tags are invalid.
+
+Example:
+
+    [ *remember_me "world" *1 {a = 1} ]
+
+#### Tag Value
+
+A tag value is a globally unique (to the document) identifier for marked objects. A tag value can be either a positive integer or an [unquoted string](#unquoted-string).
+
+TODO: Relax tag string restriction to allow start with [0-9]?
+
+
+### Reference
+
+A reference is a shorthand used in place of an actual object to indicate that it is the same object as the one marked with the given tag value (it's much like a pointer, with the tag value acting as a labeled address). References can be useful for keeping the size down when there is repeating information in your document, or for following DRY principles in a configuration document. One could also use URI references as an include mechanism, whereby parts of a document are stored in separate locations.
+
+A reference begins with the reference initiator (`#`), followed immediately (with no whitespace) by either a [tag value](#tag-value) or a [URI](#uri).
+
+Rules:
+
+ * A reference with a [tag value](#tag-value) must reference another object in the same document (local reference).
+ * Forward references within a document are allowed. An implementation must keep track of unresolved local references, and resolve them as the markers are decoded.
+ * A fully decoded document with unresolved local references is invalid.
+ * Recursive references are allowed.
+ * A reference with a URI must point to:
+   - Another CBE or CTE document (using no fragment section, thus referring to the entire document)
+   - A tag value inside another CBE or CTE document, using the fragment section of the URI as a tag identifier
+ * An implementation may choose to follow URI references, but care must be taken when doing this, as there are security implications when following unknown links.
+ * An implementation may also choose to simply pass along a URI as-is, leaving it up to the user to resolve it or not.
+ * References to dead or invalid URI links are not considered invalid per se. How this situation is handled is implementation specific, and should be fully specified in the implementation of your use case.
+
+Example:
+
+    {
+        hello = #remember_me
+        my_map = #1
+        // references an object in relative file "common.ce", tag "legalese"
+        substructure = #u"common.ce#legalese"
+        // references the entire document at the specified URL
+        my_document = #u"https://somewhere.com/my_document.cbe?format=long"
+    }
+
+
 
 Named Values
 ------------
@@ -862,7 +916,7 @@ Examples:
 
  * Before the [version specifier](#version-specifier).
  * Between an array encoding type and the opening double-quote (`h "` is invalid).
- * Between a metadata initiator (`#`) and the object it references (`# {}` is invalid)
+ * Between a marker or reference initiator and its tag value (`* 1234` and `# u"mydoc.cbe"` are invalid).
  * Splitting a time value (`2018.07.01-10 :53:22.001481/Z` is invalid).
  * Splitting a numeric value (`3f h`, `9. 41`, `3 000`, `9.3 e+3`, `- 1.0` are invalid). Use the numeric whitespace character (`_`) instead.
  * Splitting named values: (`@t rue`, `@ nil`, `@i nf`, `@n a n` are invalid).
