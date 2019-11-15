@@ -1,3 +1,10 @@
+Deprecated
+==========
+
+This repository has been deprecated. The new repository is [here](https://github.com/kstenerud/concise-encoding).
+
+
+
 Concise Text Encoding
 =====================
 
